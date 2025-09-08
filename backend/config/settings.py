@@ -41,8 +41,18 @@ INSTALLED_APPS = [
     'rest_framework',
     "api",
     "corsheaders",
+    "accounts",
+    "rest_framework_simplejwt",
 
 ]
+
+AUTH_USER_MODEL = "accounts.CustomUser"
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    )
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
