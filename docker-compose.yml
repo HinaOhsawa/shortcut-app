@@ -24,9 +24,9 @@ services:
 
   frontend:
     build: ./frontend
-    command: npm run dev
+    command: npm run dev --prefix app
     volumes:
-      - ./frontend/app:/app
+      - ./frontend:/app/frontend
     ports:
       - "3000:3000"
     depends_on:
