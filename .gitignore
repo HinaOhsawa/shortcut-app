@@ -1,2 +1,38 @@
+# Node / Next.js
 node_modules/
+.next/
+out/
+dist/
+npm-debug.log
+yarn-error.log
+
+# Python / Django
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+env/
 venv/
+ENV/
+*.sqlite3
+*.log
+*.pot
+*.py[cod]
+
+# Django migrations (optional: if you want to track migrations, remove these lines)
+*/migrations/*.py
+*/migrations/*.pyc
+*/migrations/__pycache__/
+
+# VS Code / IDE
+.vscode/
+.idea/
+
+# Docker
+*.env
+*.log
+docker-compose.override.yml
+
+# OS / system files
+.DS_Store
+Thumbs.db
