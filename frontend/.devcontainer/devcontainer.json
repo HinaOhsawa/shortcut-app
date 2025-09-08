@@ -1,0 +1,12 @@
+{
+  "name": "shortcut-frontend",
+  "service": "frontend",
+  "dockerComposeFile": ["../../docker-compose.yml"],
+  "workspaceFolder": "/app",
+  "overrideCommand": false,
+  "customizations": {
+    "vscode": {
+      "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+    }
+  }
+}
