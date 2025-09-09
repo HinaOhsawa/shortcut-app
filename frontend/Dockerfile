@@ -8,6 +8,6 @@ RUN npm install
 
 
 # アプリコードをコピー
-COPY app/. .
+COPY . .
 
 CMD ["npm", "run", "dev"]
