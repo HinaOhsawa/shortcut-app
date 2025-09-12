@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser
 from .serializers import RegisterSerializer
 
@@ -30,9 +31,23 @@ class RegisterView(APIView):#APIView を継承したクラス
 
             # serializer.save() は内部で RegisterSerializer.create() を呼ぶ
             user = serializer.save()
-            
-            # 作成したユーザー情報をレスポンスとして返す
-            return Response({"id": user.id, "email": user.email, "name": user.name}, status=status.HTTP_201_CREATED)
+
+            # JWTトークンを発行
+            refresh = RefreshToken.for_user(user)
+
+            # 作成したユーザー情報とトークンをレスポンスとして返す
+            return Response(
+                {
+                    "user": {
+                        "id": user.id,
+                        "email": user.email,
+                        "name": user.name,
+                    },
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                },
+                status=status.HTTP_201_CREATED,
+            )
         
         # バリデーションエラーの場合はエラーメッセージを返す
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
