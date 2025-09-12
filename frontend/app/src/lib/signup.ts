@@ -1,3 +1,5 @@
+import { SignupErrors } from "@/types/auth";
+
 export async function signup(name: string, email: string, password: string) {
   const res = await fetch("http://localhost:8000/api/accounts/register/", {
     method: "POST",
@@ -5,10 +7,17 @@ export async function signup(name: string, email: string, password: string) {
     body: JSON.stringify({ name, email, password }),
   });
 
+  const data = await res.json();
+
+  // エラーハンドリング
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    console.error("Signup error:", errorData);
-    throw new Error("Signup failed");
+    console.error("Signup error:", data);
+    throw data as SignupErrors;
   }
-  return res.json();
+
+  // JWTトークンを保存
+  localStorage.setItem("accessToken", data.access);
+  localStorage.setItem("refreshToken", data.refresh);
+
+  return data;
 }
