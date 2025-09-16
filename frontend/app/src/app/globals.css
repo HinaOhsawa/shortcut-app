@@ -24,3 +24,39 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  @apply text-2xl font-bold  mb-2 text-slate-600;
+}
+p {
+  @apply text-slate-500;
+}
+.link {
+  @apply hover:text-slate-400 font-bold;
+}
+label {
+  @apply block text-sm font-medium text-slate-500 mb-1;
+}
+input {
+  @apply w-full pl-10 pr-4 py-2 rounded-lg bg-white/20 border border-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent;
+}
+input.input-error {
+  @apply border-red-500 focus:ring-red-500 focus:ring-1;
+}
+.input-icon {
+  @apply absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400;
+}
+.form-card {
+  @apply bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl p-8 max-w-lg mx-auto;
+}
+.submit-btn {
+  @apply my-6 w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none;
+}
+.show-password-btn {
+  @apply absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-300;
+}
+.error-message {
+  @apply text-red-500 text-sm mt-1;
+}
