@@ -1,10 +1,11 @@
+# accounts/views.py
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser
-from .serializers import RegisterSerializer
+from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
 
 # ユーザープロフィール取得用ビュー
 class ProfileView(APIView):
@@ -17,6 +18,22 @@ class ProfileView(APIView):
             "email": user.email,
             "name": user.name,
         })
+    
+# ログイン用ビュー
+class LoginView(generics.GenericAPIView):
+    serializer_class = LoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data, context={"request": request})  # シリアライザにリクエストデータを渡す
+        serializer.is_valid(raise_exception=True) # バリデーションエラーの場合は例外を発生させる
+        user = serializer.validated_data["user"] # シリアライザで認証済みのユーザー
+
+        refresh = RefreshToken.for_user(user) # JWTトークンを発行
+        return Response({
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+            "user": UserSerializer(user).data, 
+        }, status=status.HTTP_200_OK)
     
 # ユーザー登録用ビュー
 class RegisterView(APIView):#APIView を継承したクラス

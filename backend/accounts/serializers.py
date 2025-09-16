@@ -1,7 +1,43 @@
+# accounts/serializers.py 
 from rest_framework import serializers
 from .models import CustomUser
 from rest_framework.validators import UniqueValidator
+from django.contrib.auth import authenticate
+from rest_framework.exceptions import AuthenticationFailed
 
+# ログイン用シリアライザ
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(
+        error_messages={
+            "blank": "メールアドレスは必須です。",
+            "invalid": "メールアドレスの形式が正しくありません。",
+        }
+    )
+    password = serializers.CharField(
+        write_only=True,
+        error_messages={
+            "blank": "パスワードを入力してください。",
+        }
+    )
+
+    def validate(self, attrs):
+        email = attrs.get("email")
+        password = attrs.get("password")
+
+        if not email or not password:
+            raise serializers.ValidationError("メールアドレスとパスワードを入力してください。")
+
+        user = authenticate(request=self.context.get("request"), email=email, password=password)
+
+        if not user:
+            raise AuthenticationFailed("メールアドレスまたはパスワードが正しくありません。")
+
+        if not user.is_active:
+            raise AuthenticationFailed("このアカウントは無効です。")
+
+        attrs["user"] = user
+        return attrs
+    
 
 # ユーザー登録用シリアライザ
 # ModelSerializer を継承
@@ -48,3 +84,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         # DBに保存
         user.save()
         return user
+    
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ("id", "name", "email")
