@@ -1,3 +1,12 @@
+// frontend/app/src/types/auth.ts
+
+// ユーザーデータの型定義
+export type User = {
+  id: number;
+  name: string;
+  email: string;
+};
+
 export type SignupErrors = {
   name?: string[];
   email?: string[];
