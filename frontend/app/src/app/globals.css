@@ -36,6 +36,12 @@ p {
 .link {
   @apply hover:text-slate-400 font-bold;
 }
+.btn {
+  @apply my-2 w-auto bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium py-2 px-3 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none cursor-pointer;
+}
+/* --------------------------
+  フォーム関連 
+  ---------------------------*/
 label {
   @apply block text-sm font-medium text-slate-500 mb-1;
 }
@@ -52,7 +58,7 @@ input.input-error {
   @apply bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl p-8 max-w-lg mx-auto;
 }
 .submit-btn {
-  @apply my-6 w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none;
+  @apply my-6 w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none cursor-pointer;
 }
 .show-password-btn {
   @apply absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-300;
