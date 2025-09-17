@@ -1,4 +1,4 @@
-// src/app/signin/page.tsx
+// frontend/app/src/app/signin/page.tsx
 "use client";
 import { useState } from "react";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useUser } from "@/app/context/UserContext";
 // -------------------------------------------
 // Zodスキーマ定義
 // -------------------------------------------
@@ -27,6 +28,7 @@ type SigninFormData = z.infer<typeof signinSchema>;
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const { setUser } = useUser();
 
   const {
     register,
@@ -40,11 +42,18 @@ export default function SignInForm() {
 
   const onSubmit = async (values: SigninFormData) => {
     try {
+      // サインイン API 呼び出し
       const data = await login(values.email, values.password);
+      // --- localStorage に保存 ---
       localStorage.setItem("accessToken", data.access);
       localStorage.setItem("refreshToken", data.refresh);
       localStorage.setItem("user", JSON.stringify(data.user));
+
+      // --- Context に反映 ---
+      setUser(data.user);
+
       console.log("サインイン成功", data);
+      // サインイン成功 → マイページへリダイレクト
       router.push("/profilepage");
     } catch (err: unknown) {
       if (err instanceof Error) {

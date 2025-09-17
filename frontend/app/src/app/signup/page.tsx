@@ -1,4 +1,4 @@
-// src/app/signup/page.tsx
+// frontend/app/src/app/signup/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useUser } from "@/app/context/UserContext";
 
 // -------------------------------------------
 // Zodスキーマ定義
@@ -32,6 +33,7 @@ type SignupFormData = z.infer<typeof signupSchema>;
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const { setUser } = useUser();
 
   const {
     register,
@@ -45,11 +47,19 @@ export default function SignupPage() {
 
   const onSubmit = async (values: SignupFormData) => {
     try {
+      // サインアップ API 呼び出し
       const data = await signup(values.name, values.email, values.password);
       console.log("登録成功", data);
 
+      // --- localStorage に保存 ---
+      localStorage.setItem("accessToken", data.access);
+      localStorage.setItem("refreshToken", data.refresh);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // --- Context に反映 ---
+      setUser(data.user);
+
       // 登録成功 → マイページへリダイレクト
-      // router.push("/mypage");
       router.push("/profilepage");
     } catch (err: unknown) {
       const errorObj = err as SignupErrors;
