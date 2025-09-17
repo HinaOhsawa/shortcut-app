@@ -1,4 +1,4 @@
-// lib/login.ts
+// frontend/app/src/lib/login.ts
 export type LoginResponse = {
   access: string;
   refresh: string;

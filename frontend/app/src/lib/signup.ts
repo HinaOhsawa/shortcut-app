@@ -1,3 +1,4 @@
+// frontend/app/src/lib/signup.ts
 import { SignupErrors } from "@/types/auth";
 
 export async function signup(name: string, email: string, password: string) {
