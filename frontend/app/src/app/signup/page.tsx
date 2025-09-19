@@ -163,7 +163,7 @@ export default function SignupPage() {
           {isSubmitting ? "送信中..." : "サインアップ"}
         </button>
       </form>
-      <p className="text-slate-600 mt-4">
+      <p className="mt-2">
         アカウントをお持ちの方はこちらから
         <Link href="/signin" className="link">
           サインイン

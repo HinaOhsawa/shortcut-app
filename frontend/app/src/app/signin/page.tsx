@@ -67,7 +67,7 @@ export default function SignInForm() {
   return (
     <div className="form-card">
       <h2>サインイン</h2>
-      <p className="text-slate-500">アカウントにサインインしよう。</p>
+      <p>アカウントにサインインしよう。</p>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Email */}
         <div className="mt-4">
@@ -129,7 +129,7 @@ export default function SignInForm() {
         </button>
       </form>
 
-      <p className="text-slate-600 mt-4">
+      <p className="mt-2">
         アカウントをお持ちでない方はこちらから
         <Link href="/signup" className="link">
           新規登録

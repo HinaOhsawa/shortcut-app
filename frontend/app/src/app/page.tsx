@@ -7,8 +7,14 @@ export default function Home() {
       <h1 className="font-bold text-2xl sm:text-xl">
         Welcome to the Shortcut App
       </h1>
-      <p>このアプリはショートカットキーを登録してメモするアプリです。</p>
-      <Link href="/signin">サインイン</Link>
+
+      <p className="mb-4 ">
+        このアプリはショートカットキーを登録してメモするアプリです。
+      </p>
+
+      <Link className="link" href="/signin">
+        サインイン
+      </Link>
     </div>
   );
 }
