@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "api",
     "corsheaders",
     "accounts",
+    "shortcuts",
     "rest_framework_simplejwt",
 
 ]
