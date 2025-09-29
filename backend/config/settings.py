@@ -68,6 +68,12 @@ MIDDLEWARE = [
 # 開発環境用（全てのオリジンを許可）
 CORS_ALLOW_ALL_ORIGINS = True
 
+CORS_ALLOW_HEADERS = [
+    "authorization",
+    "content-type",
+    # 他必要に応じて追加
+]
+
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
