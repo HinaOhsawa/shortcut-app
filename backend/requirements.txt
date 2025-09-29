@@ -1,4 +1,5 @@
 Django>=4.2
 djangorestframework
+djangorestframework_simplejwt==5.5.1
 psycopg2-binary
 django-cors-headers==4.7.0

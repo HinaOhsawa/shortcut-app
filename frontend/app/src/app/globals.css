@@ -1,26 +1,116 @@
 @import "tailwindcss";
-
+/* --------------------------
+  ダークモードを有効化
+  --------------------------*/
+@custom-variant dark (&:where(.dark, .dark *));
+/* --------------------------
+CSS変数を定義（ベースの色やフォント） 
+--------------------------*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --primary-background: #ffffff;
+  --primary-foreground: #314158;
+  --secondary-background: #e2e8f0;
+  --secondary-foreground: #62748e;
 }
+/* 
+primary-bg:#fff;
+primary:slate-700;
+secondary-bg:slate-50;
+secondary:slate-500; 
+*/
 
+/* --------------------------
+CSS変数をTailwind で使えるようにマッピング 
+
+  Tailwind v4 では、--color-* という名前で定義すると 
+  bg- や text- などのユーティリティクラスで自動的に参照可能になります。
+  --------------------------*/
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-primary-bg: var(--primary-background);
+  --color-primary: var(--primary-foreground);
+  --color-secondary-bg: var(--secondary-background);
+  --color-secondary: var(--secondary-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
+/* --------------------------
+  ダークモード用に変数を上書き 
+  --------------------------*/
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --primary-background: #1d293d;
+    --primary-foreground: #ffffff;
+    --secondary-background: #314158;
+    --secondary-foreground: #cad5e2;
+  }
+}
+/* 
+primary-bg:slate-800;
+primary:#ffffff;
+secondary-bg:slate-700;
+secondary:slate-300; 
+*/
+/* --------------------------
+  ダークモード用に変数を上書き 
+  --------------------------*/
+@layer base {
+  body {
+    background: var(--primary-background);
+    color: var(--primary-foreground);
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    color: var(--primary);
+    @apply text-2xl font-bold mb-2 text-primary;
+  }
+  p {
+    color: var(--secondary-foreground);
+  }
+  a {
+    @apply text-indigo-500 hover:text-indigo-600;
+    text-decoration: none;
+  }
+  label {
+    color: var(--secondary);
+    @apply block text-sm font-medium  mb-1 text-secondary;
+  }
+  input {
+    @apply w-full pl-10 pr-4 py-2 rounded-lg bg-white/10 border border-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .link {
+    @apply text-indigo-500 hover:text-indigo-400 font-bold;
+  }
+  .btn {
+    @apply my-2 w-auto bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium py-2 px-3 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none cursor-pointer;
+  }
+}
+/* --------------------------
+  フォーム関連 
+  ---------------------------*/
+@layer components {
+  input.input-error {
+    @apply border-red-500 focus:ring-red-500 focus:ring-1;
+  }
+  .input-icon {
+    @apply absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400;
+  }
+  .form-card {
+    @apply bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-xl p-8 max-w-lg mx-auto;
+  }
+  .submit-btn {
+    @apply my-6 w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none cursor-pointer;
+  }
+  .show-password-btn {
+    @apply absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-300;
+  }
+  .error-message {
+    @apply text-red-500 text-sm mt-1;
+  }
 }
