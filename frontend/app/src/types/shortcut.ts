@@ -1,14 +1,30 @@
 // frontend/app/src/types/shortcut.ts
+export type Application = {
+  id: string;
+  name: string;
+};
+
+export type Category = {
+  id: string;
+  name: string;
+  sort_order?: number;
+};
+
 // ショートカットの型定義
 export type Shortcut = {
-  id: number;
+  id: string;
   shortcut_key: string;
   command_name: string;
   note?: string;
+  sort_order?: number | null;
+  app?: string | null;
+  app_name?: string | null;
+  category?: string | null;
+  category_name?: string | null;
 };
 
 // ショートカットフォームのプロパティ型定義
 export type ShortcutFormProps = {
-  onClose: () => void; // 閉じるだけなら引数なし
-  onAdded: (newShortcut: Shortcut) => void; // 登録後に新しいショートカットを受け取る
+  onClose: () => void;
+  onAdded: (newShortcut: Shortcut) => void;
 };
