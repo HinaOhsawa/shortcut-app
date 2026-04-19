@@ -1,9 +1,12 @@
 // frontend/app/src/components/ShortcutListItem.tsx
 "use client";
+import { Pencil, Trash2 } from "lucide-react";
 import { Shortcut } from "@/types/shortcut";
 
 type Props = {
   shortcut: Shortcut;
+  onEdit?: (shortcut: Shortcut) => void;
+  onDelete?: (shortcut: Shortcut) => void;
 };
 
 function renderKeys(shortcutKey: string) {
@@ -22,7 +25,14 @@ function renderKeys(shortcutKey: string) {
     ));
 }
 
-export default function ShortcutListItem({ shortcut }: Props) {
+const stopDrag = (e: React.MouseEvent) => e.stopPropagation();
+
+export default function ShortcutListItem({
+  shortcut,
+  onEdit,
+  onDelete,
+}: Props) {
+  const showActions = !!(onEdit || onDelete);
   return (
     <div className="flex items-center gap-4 px-4 py-3 bg-white border border-indigo-100 rounded-md hover:border-indigo-300 hover:shadow-sm transition">
       <div className="flex flex-wrap items-center gap-1 min-w-[140px]">
@@ -48,6 +58,34 @@ export default function ShortcutListItem({ shortcut }: Props) {
           <p className="text-xs text-gray-500 truncate">{shortcut.note}</p>
         )}
       </div>
+      {showActions && (
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+          {onEdit && (
+            <button
+              type="button"
+              draggable={false}
+              onMouseDown={stopDrag}
+              onClick={() => onEdit(shortcut)}
+              aria-label="編集"
+              className="p-1 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-50"
+            >
+              <Pencil size={16} />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              draggable={false}
+              onMouseDown={stopDrag}
+              onClick={() => onDelete(shortcut)}
+              aria-label="削除"
+              className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -7,11 +7,17 @@ import ShortcutForm from "@/components/ShortcutForm";
 import ShortcutCard from "@/components/ShortcutCard";
 import ShortcutListItem from "@/components/ShortcutListItem";
 import ViewToggle, { ViewMode } from "@/components/ViewToggle";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { Shortcut } from "@/types/shortcut";
 
 export default function ShortcutPage() {
   const [shortcuts, setShortcuts] = useState<Shortcut[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingShortcut, setEditingShortcut] = useState<Shortcut | undefined>(
+    undefined
+  );
+  const [pendingDelete, setPendingDelete] = useState<Shortcut | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -28,6 +34,49 @@ export default function ShortcutPage() {
       }
     })();
   }, []);
+
+  const openCreate = () => {
+    setEditingShortcut(undefined);
+    setShowForm(true);
+  };
+
+  const openEdit = (shortcut: Shortcut) => {
+    setEditingShortcut(shortcut);
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingShortcut(undefined);
+  };
+
+  const handleSaved = (saved: Shortcut, mode: "create" | "update") => {
+    if (mode === "create") {
+      setShortcuts((prev) => [saved, ...prev]);
+    } else {
+      setShortcuts((prev) =>
+        prev.map((s) => (s.id === saved.id ? saved : s))
+      );
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!pendingDelete) return;
+    setDeleteBusy(true);
+    try {
+      await fetchWithAuth(
+        `http://localhost:8000/api/shortcuts/${pendingDelete.id}/`,
+        { method: "DELETE" }
+      );
+      setShortcuts((prev) => prev.filter((s) => s.id !== pendingDelete.id));
+      setPendingDelete(null);
+    } catch (err) {
+      console.error("削除に失敗:", err);
+      alert("削除に失敗しました");
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
 
   const handleDragStart =
     (index: number) => (e: React.DragEvent<HTMLDivElement>) => {
@@ -109,7 +158,7 @@ export default function ShortcutPage() {
           <ViewToggle value={viewMode} onChange={setViewMode} />
           <button
             className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded transition"
-            onClick={() => setShowForm(true)}
+            onClick={openCreate}
           >
             ＋ ショートカット追加
           </button>
@@ -118,12 +167,30 @@ export default function ShortcutPage() {
 
       {showForm && (
         <ShortcutForm
-          onClose={() => setShowForm(false)}
-          onAdded={(newShortcut: Shortcut) =>
-            setShortcuts([newShortcut, ...shortcuts])
-          }
+          key={editingShortcut?.id ?? "new"}
+          shortcut={editingShortcut}
+          onClose={closeForm}
+          onSaved={handleSaved}
         />
       )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="ショートカットを削除しますか？"
+        message={
+          pendingDelete ? (
+            <div className="flex flex-col gap-3">
+              <p>以下のショートカットを削除します。この操作は取り消せません。</p>
+              <ShortcutListItem shortcut={pendingDelete} />
+            </div>
+          ) : undefined
+        }
+        confirmLabel="削除"
+        variant="danger"
+        busy={deleteBusy}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => !deleteBusy && setPendingDelete(null)}
+      />
 
       {shortcuts.length === 0 ? (
         <div className="text-center py-16 text-gray-500">
@@ -142,10 +209,14 @@ export default function ShortcutPage() {
               onDragEnd={handleDragEnd}
               className={dragWrapperClass(i, "cursor-grab active:cursor-grabbing")}
             >
-              <div className="absolute top-2 right-2 text-indigo-300 opacity-0 group-hover:opacity-100 transition pointer-events-none">
+              <div className="absolute top-2 left-2 text-indigo-300 opacity-0 group-hover:opacity-100 transition pointer-events-none">
                 <GripVertical size={16} />
               </div>
-              <ShortcutCard shortcut={s} />
+              <ShortcutCard
+                shortcut={s}
+                onEdit={openEdit}
+                onDelete={setPendingDelete}
+              />
             </div>
           ))}
         </div>
@@ -166,7 +237,11 @@ export default function ShortcutPage() {
                 <GripVertical size={16} />
               </div>
               <div className="flex-1">
-                <ShortcutListItem shortcut={s} />
+                <ShortcutListItem
+                  shortcut={s}
+                  onEdit={openEdit}
+                  onDelete={setPendingDelete}
+                />
               </div>
             </div>
           ))}

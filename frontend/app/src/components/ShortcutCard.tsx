@@ -1,9 +1,12 @@
 // frontend/app/src/components/ShortcutCard.tsx
 "use client";
+import { Pencil, Trash2 } from "lucide-react";
 import { Shortcut } from "@/types/shortcut";
 
 type Props = {
   shortcut: Shortcut;
+  onEdit?: (shortcut: Shortcut) => void;
+  onDelete?: (shortcut: Shortcut) => void;
 };
 
 function renderKeys(shortcutKey: string) {
@@ -22,9 +25,40 @@ function renderKeys(shortcutKey: string) {
     ));
 }
 
-export default function ShortcutCard({ shortcut }: Props) {
+const stopDrag = (e: React.MouseEvent) => e.stopPropagation();
+
+export default function ShortcutCard({ shortcut, onEdit, onDelete }: Props) {
+  const showActions = !!(onEdit || onDelete);
   return (
-    <div className="flex flex-col gap-3 p-4 bg-white border border-indigo-100 rounded-lg shadow-sm hover:shadow-md hover:border-indigo-300 transition">
+    <div className="relative flex flex-col gap-3 p-4 bg-white border border-indigo-100 rounded-lg shadow-sm hover:shadow-md hover:border-indigo-300 transition">
+      {showActions && (
+        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+          {onEdit && (
+            <button
+              type="button"
+              draggable={false}
+              onMouseDown={stopDrag}
+              onClick={() => onEdit(shortcut)}
+              aria-label="編集"
+              className="p-1 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-50"
+            >
+              <Pencil size={14} />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              draggable={false}
+              onMouseDown={stopDrag}
+              onClick={() => onDelete(shortcut)}
+              aria-label="削除"
+              className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-1">
         {renderKeys(shortcut.shortcut_key)}
       </div>
