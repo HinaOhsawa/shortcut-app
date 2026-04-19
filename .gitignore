@@ -5,6 +5,7 @@ out/
 dist/
 npm-debug.log
 yarn-error.log
+*.tsbuildinfo
 
 # Python / Django
 *.pyc
