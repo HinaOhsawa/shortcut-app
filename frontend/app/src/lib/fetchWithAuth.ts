@@ -42,5 +42,6 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
     throw new Error(`Request failed with status ${res.status}`);
   }
 
+  if (res.status === 204) return null;
   return res.json();
 }
