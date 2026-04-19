@@ -26,5 +26,6 @@ export type Shortcut = {
 // ショートカットフォームのプロパティ型定義
 export type ShortcutFormProps = {
   onClose: () => void;
-  onAdded: (newShortcut: Shortcut) => void;
+  onSaved: (shortcut: Shortcut, mode: "create" | "update") => void;
+  shortcut?: Shortcut;
 };

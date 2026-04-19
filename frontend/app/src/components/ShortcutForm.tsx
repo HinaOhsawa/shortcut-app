@@ -145,18 +145,23 @@ function SelectOrCreate({
   );
 }
 
-export default function ShortcutForm({ onClose, onAdded }: ShortcutFormProps) {
-  const [commandName, setCommandName] = useState("");
-  const [shortcutKey, setShortcutKey] = useState("");
-  const [note, setNote] = useState("");
+export default function ShortcutForm({
+  onClose,
+  onSaved,
+  shortcut,
+}: ShortcutFormProps) {
+  const isEdit = !!shortcut;
+  const [commandName, setCommandName] = useState(shortcut?.command_name ?? "");
+  const [shortcutKey, setShortcutKey] = useState(shortcut?.shortcut_key ?? "");
+  const [note, setNote] = useState(shortcut?.note ?? "");
   const [capturing, setCapturing] = useState(false);
   const [mac, setMac] = useState(false);
   const captureRef = useRef<HTMLDivElement>(null);
 
   const [apps, setApps] = useState<Application[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [appId, setAppId] = useState("");
-  const [categoryId, setCategoryId] = useState("");
+  const [appId, setAppId] = useState(shortcut?.app ?? "");
+  const [categoryId, setCategoryId] = useState(shortcut?.category ?? "");
 
   useEffect(() => {
     setMac(isMac());
@@ -231,25 +236,25 @@ export default function ShortcutForm({ onClose, onAdded }: ShortcutFormProps) {
       return;
     }
     try {
-      const newShortcut = await fetchWithAuth(
-        "http://localhost:8000/api/shortcuts/",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            command_name: commandName,
-            shortcut_key: shortcutKey,
-            note,
-            app: appId || null,
-            category: categoryId || null,
-          }),
-        }
-      );
-      onAdded(newShortcut);
+      const url = isEdit
+        ? `http://localhost:8000/api/shortcuts/${shortcut!.id}/`
+        : "http://localhost:8000/api/shortcuts/";
+      const saved = await fetchWithAuth(url, {
+        method: isEdit ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          command_name: commandName,
+          shortcut_key: shortcutKey,
+          note,
+          app: appId || null,
+          category: categoryId || null,
+        }),
+      });
+      onSaved(saved, isEdit ? "update" : "create");
       onClose();
     } catch (err) {
       console.error(err);
-      alert("登録に失敗しました");
+      alert(isEdit ? "更新に失敗しました" : "登録に失敗しました");
     }
   };
 
@@ -269,7 +274,7 @@ export default function ShortcutForm({ onClose, onAdded }: ShortcutFormProps) {
           <X size={20} />
         </button>
         <h2 className="text-lg font-semibold mb-4 text-indigo-950">
-          ショートカット登録
+          {isEdit ? "ショートカット編集" : "ショートカット登録"}
         </h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">
@@ -377,7 +382,7 @@ export default function ShortcutForm({ onClose, onAdded }: ShortcutFormProps) {
               type="submit"
               className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded"
             >
-              登録
+              {isEdit ? "更新" : "登録"}
             </button>
           </div>
         </form>
