@@ -2,6 +2,7 @@ from django.urls import path
 from .views import (
     ApplicationListCreateView,
     CategoryListCreateView,
+    ShortcutDetailView,
     ShortcutListCreateView,
     ShortcutReorderView,
 )
@@ -19,4 +20,5 @@ urlpatterns = [
         CategoryListCreateView.as_view(),
         name="category-list-create",
     ),
+    path("<uuid:pk>/", ShortcutDetailView.as_view(), name="shortcut-detail"),
 ]

@@ -24,6 +24,14 @@ class ShortcutListCreateView(generics.ListCreateAPIView):
         serializer.save(user=self.request.user)
 
 
+class ShortcutDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ShortcutSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Shortcut.objects.filter(user=self.request.user)
+
+
 class ShortcutReorderView(APIView):
     """
     POST /api/shortcuts/reorder/
