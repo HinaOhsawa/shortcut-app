@@ -59,8 +59,8 @@ export default function SignupPage() {
       // --- Context に反映 ---
       setUser(data.user);
 
-      // 登録成功 → マイページへリダイレクト
-      router.push("/profilepage");
+      // 登録成功 → ダッシュボードへリダイレクト
+      router.push("/dashboard");
     } catch (err: unknown) {
       const errorObj = err as SignupErrors;
       if (errorObj.name) {

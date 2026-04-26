@@ -1,16 +1,26 @@
-// frontend/app/src/app/mypage/page.tsx
+// frontend/app/src/app/(main)/shortcuts/page.tsx
 "use client";
-import { useEffect, useState } from "react";
-import { GripVertical } from "lucide-react";
+import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { GripVertical, X as XIcon } from "lucide-react";
 import { fetchWithAuth } from "@/lib/fetchWithAuth";
 import ShortcutForm from "@/components/ShortcutForm";
 import ShortcutCard from "@/components/ShortcutCard";
 import ShortcutListItem from "@/components/ShortcutListItem";
 import ViewToggle, { ViewMode } from "@/components/ViewToggle";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { useNavData } from "@/app/context/NavDataContext";
 import { Shortcut } from "@/types/shortcut";
 
-export default function ShortcutPage() {
+function ShortcutsView() {
+  const searchParams = useSearchParams();
+  const appFilter = searchParams.get("app") ?? "";
+  const categoryFilter = searchParams.get("category") ?? "";
+  const searchQuery = searchParams.get("q") ?? "";
+  const newFlag = searchParams.get("new") === "1";
+  const { apps, categories } = useNavData();
+
   const [shortcuts, setShortcuts] = useState<Shortcut[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingShortcut, setEditingShortcut] = useState<Shortcut | undefined>(
@@ -25,15 +35,24 @@ export default function ShortcutPage() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await fetchWithAuth(
-          "http://localhost:8000/api/shortcuts/"
-        );
+        const url = new URL("http://localhost:8000/api/shortcuts/");
+        if (appFilter) url.searchParams.set("app", appFilter);
+        if (categoryFilter) url.searchParams.set("category", categoryFilter);
+        if (searchQuery) url.searchParams.set("search", searchQuery);
+        const data = await fetchWithAuth(url.toString());
         setShortcuts(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("認証エラー:", err);
       }
     })();
-  }, []);
+  }, [appFilter, categoryFilter, searchQuery]);
+
+  useEffect(() => {
+    if (newFlag) {
+      setEditingShortcut(undefined);
+      setShowForm(true);
+    }
+  }, [newFlag]);
 
   const openCreate = () => {
     setEditingShortcut(undefined);
@@ -54,9 +73,7 @@ export default function ShortcutPage() {
     if (mode === "create") {
       setShortcuts((prev) => [saved, ...prev]);
     } else {
-      setShortcuts((prev) =>
-        prev.map((s) => (s.id === saved.id ? saved : s))
-      );
+      setShortcuts((prev) => prev.map((s) => (s.id === saved.id ? saved : s)));
     }
   };
 
@@ -141,29 +158,58 @@ export default function ShortcutPage() {
     return [
       "group relative transition",
       isDragging ? "opacity-40" : "",
-      isOver ? "ring-2 ring-indigo-400 rounded-lg" : "",
+      isOver ? "ring-2 ring-primary rounded-lg" : "",
       extra,
     ]
       .filter(Boolean)
       .join(" ");
   };
 
+  const appName = apps.find((a) => a.id === appFilter)?.name;
+  const categoryName = categories.find((c) => c.id === categoryFilter)?.name;
+  const hasFilter = !!(appFilter || categoryFilter || searchQuery);
+
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <h1 className="text-2xl font-bold text-indigo-600">
+        <h1 className="text-2xl font-bold text-fg">
           ショートカット一覧
         </h1>
         <div className="flex items-center gap-3">
           <ViewToggle value={viewMode} onChange={setViewMode} />
-          <button
-            className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded transition"
-            onClick={openCreate}
-          >
+          <button className="btn" onClick={openCreate}>
             ＋ ショートカット追加
           </button>
         </div>
       </div>
+
+      {hasFilter && (
+        <div className="flex items-center gap-2 mb-4 text-sm">
+          <span className="text-muted">フィルター:</span>
+          {appName && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-soft text-primary-soft-fg rounded-full border border-primary-soft-border">
+              アプリ: {appName}
+            </span>
+          )}
+          {categoryName && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent-soft text-accent-soft-fg rounded-full border border-accent-soft-border">
+              カテゴリ: {categoryName}
+            </span>
+          )}
+          {searchQuery && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-info-soft text-info-soft-fg rounded-full border border-info-soft-border">
+              検索: {searchQuery}
+            </span>
+          )}
+          <Link
+            href="/shortcuts"
+            className="inline-flex items-center gap-1 text-muted hover:text-fg hover:underline"
+          >
+            <XIcon size={14} />
+            クリア
+          </Link>
+        </div>
+      )}
 
       {showForm && (
         <ShortcutForm
@@ -193,11 +239,13 @@ export default function ShortcutPage() {
       />
 
       {shortcuts.length === 0 ? (
-        <div className="text-center py-16 text-gray-500">
-          ショートカットがまだ登録されていません。
+        <div className="text-center py-16 text-muted">
+          {hasFilter
+            ? "条件に一致するショートカットがありません。"
+            : "ショートカットがまだ登録されていません。"}
         </div>
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {shortcuts.map((s, i) => (
             <div
               key={s.id}
@@ -207,9 +255,12 @@ export default function ShortcutPage() {
               onDragLeave={handleDragLeave}
               onDrop={handleDrop(i)}
               onDragEnd={handleDragEnd}
-              className={dragWrapperClass(i, "cursor-grab active:cursor-grabbing")}
+              className={dragWrapperClass(
+                i,
+                "cursor-grab active:cursor-grabbing"
+              )}
             >
-              <div className="absolute top-2 left-2 text-indigo-300 opacity-0 group-hover:opacity-100 transition pointer-events-none">
+              <div className="absolute top-2 left-2 text-subtle opacity-0 group-hover:opacity-100 transition pointer-events-none">
                 <GripVertical size={16} />
               </div>
               <ShortcutCard
@@ -231,9 +282,12 @@ export default function ShortcutPage() {
               onDragLeave={handleDragLeave}
               onDrop={handleDrop(i)}
               onDragEnd={handleDragEnd}
-              className={dragWrapperClass(i, "flex items-center gap-2 cursor-grab active:cursor-grabbing")}
+              className={dragWrapperClass(
+                i,
+                "flex items-center gap-2 cursor-grab active:cursor-grabbing"
+              )}
             >
-              <div className="text-indigo-300 opacity-0 group-hover:opacity-100 transition">
+              <div className="text-subtle opacity-0 group-hover:opacity-100 transition">
                 <GripVertical size={16} />
               </div>
               <div className="flex-1">
@@ -248,5 +302,13 @@ export default function ShortcutPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ShortcutsPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-subtle">読み込み中...</div>}>
+      <ShortcutsView />
+    </Suspense>
   );
 }

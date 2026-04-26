@@ -53,8 +53,8 @@ export default function SignInForm() {
       setUser(data.user);
 
       console.log("サインイン成功", data);
-      // サインイン成功 → マイページへリダイレクト
-      router.push("/profilepage");
+      // サインイン成功 → ダッシュボードへリダイレクト
+      router.push("/dashboard");
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError("root.serverError", { message: err.message });
