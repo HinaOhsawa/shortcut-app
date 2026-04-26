@@ -1,5 +1,6 @@
 # backend/shortcuts/views.py
 from django.db import transaction
+from django.db.models import Q
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -16,9 +17,23 @@ class ShortcutListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Shortcut.objects.filter(user=self.request.user).order_by(
-            "sort_order", "created_at"
-        )
+        qs = Shortcut.objects.filter(user=self.request.user)
+        app_id = self.request.query_params.get("app")
+        category_id = self.request.query_params.get("category")
+        search = self.request.query_params.get("search")
+        if app_id:
+            qs = qs.filter(app_id=app_id)
+        if category_id:
+            qs = qs.filter(category_id=category_id)
+        if search:
+            qs = qs.filter(
+                Q(command_name__icontains=search)
+                | Q(shortcut_key__icontains=search)
+                | Q(note__icontains=search)
+                | Q(app__name__icontains=search)
+                | Q(category__name__icontains=search)
+            )
+        return qs.order_by("sort_order", "created_at")
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -74,6 +89,14 @@ class ApplicationListCreateView(generics.ListCreateAPIView):
         serializer.save(user=self.request.user)
 
 
+class ApplicationDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ApplicationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Application.objects.filter(user=self.request.user)
+
+
 class CategoryListCreateView(generics.ListCreateAPIView):
     serializer_class = CategorySerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -85,3 +108,11 @@ class CategoryListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = CategorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Category.objects.filter(user=self.request.user)
