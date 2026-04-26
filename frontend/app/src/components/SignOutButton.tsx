@@ -22,8 +22,13 @@ export default function SignOutButton() {
   };
 
   return (
-    <button onClick={handleSignOut} className="cursor-pointer">
-      <LogOut />
+    <button
+      onClick={handleSignOut}
+      aria-label="ログアウト"
+      title="ログアウト"
+      className="p-2 rounded-md text-muted hover:text-fg hover:bg-surface-2 transition cursor-pointer"
+    >
+      <LogOut size={18} />
     </button>
   );
 }

@@ -15,11 +15,11 @@ function renderKeys(shortcutKey: string) {
     .filter(Boolean)
     .map((key, i, arr) => (
       <span key={`${key}-${i}`} className="inline-flex items-center">
-        <kbd className="px-1.5 py-0.5 text-xs font-semibold text-indigo-600 bg-white border border-indigo-200 rounded shadow-sm">
+        <kbd className="px-1.5 py-0.5 text-xs font-semibold text-primary-soft-fg bg-surface border border-primary-soft-border rounded shadow-sm">
           {key}
         </kbd>
         {i < arr.length - 1 && (
-          <span className="mx-0.5 text-indigo-300 text-xs">+</span>
+          <span className="mx-0.5 text-subtle text-xs">+</span>
         )}
       </span>
     ));
@@ -34,28 +34,28 @@ export default function ShortcutListItem({
 }: Props) {
   const showActions = !!(onEdit || onDelete);
   return (
-    <div className="flex items-center gap-4 px-4 py-3 bg-white border border-indigo-100 rounded-md hover:border-indigo-300 hover:shadow-sm transition">
+    <div className="flex items-center gap-4 px-4 py-3 bg-surface border border-line rounded-md hover:border-primary hover:shadow-sm transition">
       <div className="flex flex-wrap items-center gap-1 min-w-[140px]">
         {renderKeys(shortcut.shortcut_key)}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <div className="text-sm font-semibold text-indigo-600 truncate">
+          <div className="text-sm font-semibold text-fg truncate">
             {shortcut.command_name}
           </div>
           {shortcut.app_name && (
-            <span className="text-xs px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-100 whitespace-nowrap">
+            <span className="text-xs px-1.5 py-0.5 bg-primary-soft text-primary-soft-fg rounded-full border border-primary-soft-border whitespace-nowrap">
               {shortcut.app_name}
             </span>
           )}
           {shortcut.category_name && (
-            <span className="text-xs px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100 whitespace-nowrap">
+            <span className="text-xs px-1.5 py-0.5 bg-accent-soft text-accent-soft-fg rounded-full border border-accent-soft-border whitespace-nowrap">
               {shortcut.category_name}
             </span>
           )}
         </div>
         {shortcut.note && (
-          <p className="text-xs text-gray-500 truncate">{shortcut.note}</p>
+          <p className="text-xs text-muted truncate">{shortcut.note}</p>
         )}
       </div>
       {showActions && (
@@ -67,7 +67,7 @@ export default function ShortcutListItem({
               onMouseDown={stopDrag}
               onClick={() => onEdit(shortcut)}
               aria-label="編集"
-              className="p-1 rounded text-gray-400 hover:text-indigo-600 hover:bg-indigo-50"
+              className="p-1 rounded text-subtle hover:text-primary hover:bg-primary-soft"
             >
               <Pencil size={16} />
             </button>
@@ -79,7 +79,7 @@ export default function ShortcutListItem({
               onMouseDown={stopDrag}
               onClick={() => onDelete(shortcut)}
               aria-label="削除"
-              className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"
+              className="p-1 rounded text-subtle hover:text-danger hover:bg-danger-soft"
             >
               <Trash2 size={16} />
             </button>

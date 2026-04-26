@@ -11,12 +11,12 @@ type Props = {
 
 export default function ViewToggle({ value, onChange }: Props) {
   const baseBtn =
-    "flex items-center gap-1 px-3 py-1.5 text-sm transition focus:outline-none";
-  const active = "bg-indigo-500 text-white";
-  const inactive = "bg-white text-indigo-700 hover:bg-indigo-50";
+    "flex items-center gap-1 px-3 py-1.5 text-sm transition focus:outline-none cursor-pointer";
+  const active = "bg-primary text-primary-fg";
+  const inactive = "bg-surface text-muted hover:bg-surface-2 hover:text-fg";
 
   return (
-    <div className="inline-flex border border-indigo-200 rounded-md overflow-hidden">
+    <div className="inline-flex border border-line rounded-md overflow-hidden">
       <button
         type="button"
         onClick={() => onChange("grid")}
@@ -30,7 +30,7 @@ export default function ViewToggle({ value, onChange }: Props) {
       <button
         type="button"
         onClick={() => onChange("list")}
-        className={`${baseBtn} border-l border-indigo-200 ${
+        className={`${baseBtn} border-l border-line ${
           value === "list" ? active : inactive
         }`}
         aria-pressed={value === "list"}

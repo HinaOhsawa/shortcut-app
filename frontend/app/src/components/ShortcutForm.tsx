@@ -89,11 +89,10 @@ function SelectOrCreate({
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-sm font-medium text-gray-700">{label}</span>
+      <span className="text-sm font-medium text-muted">{label}</span>
       {creating ? (
         <div className="flex gap-2">
           <input
-            className="flex-1 border p-2 rounded text-gray-900 placeholder:text-gray-400"
             placeholder={`新しい${label}名`}
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
@@ -103,7 +102,7 @@ function SelectOrCreate({
             type="button"
             onClick={handleCreate}
             disabled={busy || !newName.trim()}
-            className="px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded disabled:opacity-50"
+            className="btn whitespace-nowrap"
           >
             追加
           </button>
@@ -113,7 +112,7 @@ function SelectOrCreate({
               setCreating(false);
               setNewName("");
             }}
-            className="px-3 py-2 border rounded hover:bg-gray-50"
+            className="btn-secondary whitespace-nowrap"
           >
             取消
           </button>
@@ -121,7 +120,6 @@ function SelectOrCreate({
       ) : (
         <div className="flex gap-2">
           <select
-            className="flex-1 border p-2 rounded text-gray-900 bg-white"
             value={value}
             onChange={(e) => onChange(e.target.value)}
           >
@@ -135,7 +133,7 @@ function SelectOrCreate({
           <button
             type="button"
             onClick={() => setCreating(true)}
-            className="px-3 py-2 border border-indigo-300 text-indigo-600 rounded hover:bg-indigo-50"
+            className="px-3 py-2 border border-primary-soft-border text-primary rounded-md hover:bg-primary-soft transition cursor-pointer whitespace-nowrap"
           >
             ＋新規
           </button>
@@ -263,24 +261,26 @@ export default function ShortcutForm({
     : [];
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="relative bg-white border p-5 rounded-lg w-[480px] max-h-[90vh] overflow-y-auto shadow-lg">
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50"
+      style={{ backgroundColor: "var(--overlay)" }}
+    >
+      <div className="relative bg-surface border border-line p-5 rounded-lg w-[480px] max-h-[90vh] overflow-y-auto shadow-lg">
         <button
           type="button"
           onClick={onClose}
           aria-label="閉じる"
-          className="absolute top-3 right-3 p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"
+          className="absolute top-3 right-3 p-1 rounded text-subtle hover:text-fg hover:bg-surface-2 transition"
         >
           <X size={20} />
         </button>
-        <h2 className="text-lg font-semibold mb-4 text-indigo-950">
+        <h2 className="text-lg font-semibold mb-4 text-fg">
           {isEdit ? "ショートカット編集" : "ショートカット登録"}
         </h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-gray-700">コマンド名</span>
+            <span className="text-sm font-medium text-muted">コマンド名</span>
             <input
-              className="border p-2 rounded text-gray-900 placeholder:text-gray-400"
               placeholder="例: コマンドパレットを開く"
               value={commandName}
               onChange={(e) => setCommandName(e.target.value)}
@@ -306,7 +306,7 @@ export default function ShortcutForm({
           />
 
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-muted">
               ショートカットキー
             </span>
             <div
@@ -320,25 +320,25 @@ export default function ShortcutForm({
               onFocus={() => setCapturing(true)}
               onBlur={() => setCapturing(false)}
               onKeyDown={handleKeyDown}
-              className={`border p-2 rounded min-h-[44px] flex flex-wrap items-center gap-1 cursor-text outline-none transition ${
+              className={`border p-2 rounded-md min-h-[44px] flex flex-wrap items-center gap-1 cursor-text outline-none transition ${
                 capturing
-                  ? "border-indigo-500 ring-2 ring-indigo-200 bg-indigo-50"
-                  : "border-gray-300 bg-white"
+                  ? "border-primary ring-2 ring-primary/30 bg-primary-soft"
+                  : "border-line bg-surface"
               }`}
             >
               {keyParts.length > 0 ? (
                 keyParts.map((key, i, arr) => (
                   <span key={`${key}-${i}`} className="inline-flex items-center">
-                    <kbd className="px-2 py-0.5 text-sm font-semibold text-indigo-900 bg-white border border-indigo-200 rounded shadow-sm">
+                    <kbd className="px-2 py-0.5 text-sm font-semibold text-primary-soft-fg bg-surface border border-primary-soft-border rounded shadow-sm">
                       {key}
                     </kbd>
                     {i < arr.length - 1 && (
-                      <span className="mx-1 text-indigo-400">+</span>
+                      <span className="mx-1 text-subtle">+</span>
                     )}
                   </span>
                 ))
               ) : (
-                <span className="text-sm text-gray-400">
+                <span className="text-sm text-subtle">
                   {capturing
                     ? "キーを押してください…"
                     : "クリックしてキーを入力"}
@@ -353,7 +353,7 @@ export default function ShortcutForm({
                   setCapturing(true);
                   captureRef.current?.focus();
                 }}
-                className="self-start text-xs text-indigo-600 hover:underline"
+                className="self-start text-xs text-primary hover:underline"
               >
                 クリアして再入力
               </button>
@@ -361,9 +361,8 @@ export default function ShortcutForm({
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-gray-700">補足メモ</span>
+            <span className="text-sm font-medium text-muted">補足メモ</span>
             <textarea
-              className="border p-2 rounded text-gray-900 placeholder:text-gray-400"
               placeholder="補足メモ（任意）"
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -371,17 +370,10 @@ export default function ShortcutForm({
           </label>
 
           <div className="flex justify-end gap-2 mt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border rounded hover:bg-gray-50"
-            >
+            <button type="button" onClick={onClose} className="btn-secondary">
               キャンセル
             </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded"
-            >
+            <button type="submit" className="btn">
               {isEdit ? "更新" : "登録"}
             </button>
           </div>

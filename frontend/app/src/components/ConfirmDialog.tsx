@@ -39,32 +39,33 @@ export default function ConfirmDialog({
 
   const confirmClass =
     variant === "danger"
-      ? "bg-red-500 hover:bg-red-600 text-white"
-      : "bg-indigo-500 hover:bg-indigo-600 text-white";
+      ? "bg-danger hover:bg-danger-hover text-danger-fg"
+      : "bg-primary hover:bg-primary-hover text-primary-fg";
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="relative bg-white rounded-lg shadow-lg w-[420px] max-w-[90vw] p-5">
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50"
+      style={{ backgroundColor: "var(--overlay)" }}
+    >
+      <div className="relative bg-surface border border-line rounded-lg shadow-lg w-[420px] max-w-[90vw] p-5">
         <button
           type="button"
           aria-label="閉じる"
           onClick={onCancel}
-          className="absolute top-3 right-3 p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"
+          className="absolute top-3 right-3 p-1 rounded text-subtle hover:text-fg hover:bg-surface-2 transition"
         >
           <X size={20} />
         </button>
-        <h2 className="text-lg font-semibold text-indigo-950 mb-2 pr-8">
-          {title}
-        </h2>
+        <h2 className="text-lg font-semibold text-fg mb-2 pr-8">{title}</h2>
         {message && (
-          <div className="text-sm text-gray-700 mb-4">{message}</div>
+          <div className="text-sm text-muted mb-4">{message}</div>
         )}
         <div className="flex justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50"
+            className="btn-secondary"
           >
             {cancelLabel}
           </button>
@@ -72,7 +73,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className={`px-4 py-2 rounded disabled:opacity-50 transition ${confirmClass}`}
+            className={`px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-60 cursor-pointer ${confirmClass}`}
           >
             {confirmLabel}
           </button>
