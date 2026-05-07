@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Pencil, Plus, Trash2, X as XIcon } from "lucide-react";
 import { fetchWithAuth } from "@/lib/fetchWithAuth";
+import { apiUrl } from "@/lib/apiBase";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useNavData } from "@/app/context/NavDataContext";
 import { Application } from "@/types/shortcut";
@@ -22,14 +23,11 @@ export default function ApplicationsPage() {
     if (!name) return;
     setBusy(true);
     try {
-      await fetchWithAuth(
-        "http://localhost:8000/api/shortcuts/applications/",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name }),
-        }
-      );
+      await fetchWithAuth(apiUrl("/api/shortcuts/applications/"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
       setNewName("");
       await refreshApps();
     } catch (err) {
@@ -45,14 +43,11 @@ export default function ApplicationsPage() {
     const name = editing.name.trim();
     if (!name) return;
     try {
-      await fetchWithAuth(
-        `http://localhost:8000/api/shortcuts/applications/${editing.id}/`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name }),
-        }
-      );
+      await fetchWithAuth(apiUrl(`/api/shortcuts/applications/${editing.id}/`), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
       setEditing(null);
       await refreshApps();
     } catch (err) {
@@ -66,7 +61,7 @@ export default function ApplicationsPage() {
     setDeleteBusy(true);
     try {
       await fetchWithAuth(
-        `http://localhost:8000/api/shortcuts/applications/${pendingDelete.id}/`,
+        apiUrl(`/api/shortcuts/applications/${pendingDelete.id}/`),
         { method: "DELETE" }
       );
       setPendingDelete(null);

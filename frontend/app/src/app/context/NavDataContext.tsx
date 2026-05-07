@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { fetchWithAuth } from "@/lib/fetchWithAuth";
+import { apiUrl } from "@/lib/apiBase";
 import { Application, Category } from "@/types/shortcut";
 
 type NavDataValue = {
@@ -25,9 +26,7 @@ export function NavDataProvider({ children }: { children: React.ReactNode }) {
 
   const refreshApps = useCallback(async () => {
     try {
-      const data = await fetchWithAuth(
-        "http://localhost:8000/api/shortcuts/applications/"
-      );
+      const data = await fetchWithAuth(apiUrl("/api/shortcuts/applications/"));
       setApps(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("アプリ取得失敗:", err);
@@ -36,9 +35,7 @@ export function NavDataProvider({ children }: { children: React.ReactNode }) {
 
   const refreshCategories = useCallback(async () => {
     try {
-      const data = await fetchWithAuth(
-        "http://localhost:8000/api/shortcuts/categories/"
-      );
+      const data = await fetchWithAuth(apiUrl("/api/shortcuts/categories/"));
       setCategories(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("カテゴリ取得失敗:", err);

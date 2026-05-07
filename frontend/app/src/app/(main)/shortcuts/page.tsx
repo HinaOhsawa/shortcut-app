@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { GripVertical, X as XIcon } from "lucide-react";
 import { fetchWithAuth } from "@/lib/fetchWithAuth";
+import { apiUrl } from "@/lib/apiBase";
 import ShortcutForm from "@/components/ShortcutForm";
 import ShortcutCard from "@/components/ShortcutCard";
 import ShortcutListItem from "@/components/ShortcutListItem";
@@ -35,7 +36,7 @@ function ShortcutsView() {
   useEffect(() => {
     (async () => {
       try {
-        const url = new URL("http://localhost:8000/api/shortcuts/");
+        const url = new URL(apiUrl("/api/shortcuts/"));
         if (appFilter) url.searchParams.set("app", appFilter);
         if (categoryFilter) url.searchParams.set("category", categoryFilter);
         if (searchQuery) url.searchParams.set("search", searchQuery);
@@ -81,10 +82,9 @@ function ShortcutsView() {
     if (!pendingDelete) return;
     setDeleteBusy(true);
     try {
-      await fetchWithAuth(
-        `http://localhost:8000/api/shortcuts/${pendingDelete.id}/`,
-        { method: "DELETE" }
-      );
+      await fetchWithAuth(apiUrl(`/api/shortcuts/${pendingDelete.id}/`), {
+        method: "DELETE",
+      });
       setShortcuts((prev) => prev.filter((s) => s.id !== pendingDelete.id));
       setPendingDelete(null);
     } catch (err) {
@@ -117,7 +117,7 @@ function ShortcutsView() {
 
   const persistOrder = async (items: Shortcut[], previous: Shortcut[]) => {
     try {
-      await fetchWithAuth("http://localhost:8000/api/shortcuts/reorder/", {
+      await fetchWithAuth(apiUrl("/api/shortcuts/reorder/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ order: items.map((s) => s.id) }),

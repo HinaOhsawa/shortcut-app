@@ -1,8 +1,9 @@
 // frontend/app/src/lib/signup.ts
 import { SignupErrors } from "@/types/auth";
+import { apiUrl } from "@/lib/apiBase";
 
 export async function signup(name: string, email: string, password: string) {
-  const res = await fetch("http://localhost:8000/api/accounts/register/", {
+  const res = await fetch(apiUrl("/api/accounts/register/"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, email, password }),

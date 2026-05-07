@@ -1,4 +1,6 @@
 // src/lib/fetchWithAuth.ts
+import { apiUrl } from "@/lib/apiBase";
+
 function redirectToSignin(): Promise<never> {
   if (typeof window !== "undefined") {
     localStorage.removeItem("accessToken");
@@ -33,14 +35,11 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
       return redirectToSignin();
     }
 
-    const refreshRes = await fetch(
-      "http://localhost:8000/api/accounts/token/refresh/",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh: refreshToken }),
-      }
-    );
+    const refreshRes = await fetch(apiUrl("/api/accounts/token/refresh/"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh: refreshToken }),
+    });
 
     if (!refreshRes.ok) {
       return redirectToSignin();
@@ -49,6 +48,10 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
     const data = await refreshRes.json();
     const newAccessToken = data.access;
     localStorage.setItem("accessToken", newAccessToken ?? "");
+    // ROTATE_REFRESH_TOKENS=True の場合、新しい refresh トークンも返るので保存する
+    if (data.refresh) {
+      localStorage.setItem("refreshToken", data.refresh);
+    }
 
     options.headers = {
       ...(options.headers || {}),

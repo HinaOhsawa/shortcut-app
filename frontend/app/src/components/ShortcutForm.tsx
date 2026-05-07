@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { fetchWithAuth } from "@/lib/fetchWithAuth";
+import { apiUrl } from "@/lib/apiBase";
 import {
   Application,
   Category,
@@ -166,8 +167,8 @@ export default function ShortcutForm({
     (async () => {
       try {
         const [appsData, catsData] = await Promise.all([
-          fetchWithAuth("http://localhost:8000/api/shortcuts/applications/"),
-          fetchWithAuth("http://localhost:8000/api/shortcuts/categories/"),
+          fetchWithAuth(apiUrl("/api/shortcuts/applications/")),
+          fetchWithAuth(apiUrl("/api/shortcuts/categories/")),
         ]);
         setApps(Array.isArray(appsData) ? appsData : []);
         setCategories(Array.isArray(catsData) ? catsData : []);
@@ -180,7 +181,7 @@ export default function ShortcutForm({
   const createApp = async (name: string): Promise<Application | null> => {
     try {
       const created: Application = await fetchWithAuth(
-        "http://localhost:8000/api/shortcuts/applications/",
+        apiUrl("/api/shortcuts/applications/"),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -199,7 +200,7 @@ export default function ShortcutForm({
   const createCategory = async (name: string): Promise<Category | null> => {
     try {
       const created: Category = await fetchWithAuth(
-        "http://localhost:8000/api/shortcuts/categories/",
+        apiUrl("/api/shortcuts/categories/"),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -235,8 +236,8 @@ export default function ShortcutForm({
     }
     try {
       const url = isEdit
-        ? `http://localhost:8000/api/shortcuts/${shortcut!.id}/`
-        : "http://localhost:8000/api/shortcuts/";
+        ? apiUrl(`/api/shortcuts/${shortcut!.id}/`)
+        : apiUrl("/api/shortcuts/");
       const saved = await fetchWithAuth(url, {
         method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },

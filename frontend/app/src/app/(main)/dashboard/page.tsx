@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AppWindow, Folder, Keyboard, Plus } from "lucide-react";
 import { fetchWithAuth } from "@/lib/fetchWithAuth";
+import { apiUrl } from "@/lib/apiBase";
 import { useNavData } from "@/app/context/NavDataContext";
 
 export default function DashboardPage() {
@@ -13,9 +14,7 @@ export default function DashboardPage() {
   useEffect(() => {
     (async () => {
       try {
-        const data = await fetchWithAuth(
-          "http://localhost:8000/api/shortcuts/"
-        );
+        const data = await fetchWithAuth(apiUrl("/api/shortcuts/"));
         setShortcutCount(Array.isArray(data) ? data.length : 0);
       } catch (err) {
         console.error("ショートカット取得失敗:", err);

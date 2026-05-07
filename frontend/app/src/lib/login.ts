@@ -1,4 +1,6 @@
 // frontend/app/src/lib/login.ts
+import { apiUrl } from "@/lib/apiBase";
+
 export type LoginResponse = {
   access: string;
   refresh: string;
@@ -13,7 +15,7 @@ export async function login(
   email: string,
   password: string
 ): Promise<LoginResponse> {
-  const res = await fetch("http://localhost:8000/api/accounts/login/", {
+  const res = await fetch(apiUrl("/api/accounts/login/"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
