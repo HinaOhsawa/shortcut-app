@@ -62,7 +62,8 @@ AUTH_USER_MODEL = "accounts.CustomUser"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        # HttpOnly Cookie からの JWT を主に、Authorization ヘッダはフォールバック
+        "accounts.authentication.CookieJWTAuthentication",
     ),
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
@@ -106,7 +107,21 @@ CORS_ALLOWED_ORIGINS = _csv_env(
 CORS_ALLOW_HEADERS = [
     "authorization",
     "content-type",
+    "x-csrftoken",
 ]
+
+# Next.js rewrites を経由するため通常のリクエストは Same-Origin だが、
+# 開発時の直叩きや CSRF トークン検証時のオリジン照合のため明示しておく
+CSRF_TRUSTED_ORIGINS = _csv_env(
+    "CSRF_TRUSTED_ORIGINS",
+    "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000",
+)
+
+# csrftoken Cookie はフロントエンドの JS から読む必要があるため HttpOnly にしない
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = "Lax"
+# ヘッダ名を SimpleJWT 等と揃えて X-CSRFToken に統一
+CSRF_HEADER_NAME = "HTTP_X_CSRFTOKEN"
 
 ROOT_URLCONF = 'config.urls'
 
