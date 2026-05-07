@@ -3,7 +3,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 from .models import CustomUser
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
 
@@ -22,6 +27,8 @@ class ProfileView(APIView):
 # ログイン用ビュー
 class LoginView(generics.GenericAPIView):
     serializer_class = LoginSerializer
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth"
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data, context={"request": request})  # シリアライザにリクエストデータを渡す
@@ -38,6 +45,8 @@ class LoginView(generics.GenericAPIView):
 # ユーザー登録用ビュー
 class RegisterView(APIView):#APIView を継承したクラス
     permission_classes = [AllowAny]  # 誰でもアクセス可能
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "register"
 
     def post(self, request):
         # シリアライザにデータを渡す
@@ -68,3 +77,34 @@ class RegisterView(APIView):#APIView を継承したクラス
         
         # バリデーションエラーの場合はエラーメッセージを返す
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# JWT 標準ビューにレート制限を適用したラッパー
+class ThrottledTokenObtainPairView(TokenObtainPairView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth"
+
+
+class ThrottledTokenRefreshView(TokenRefreshView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth"
+
+
+# ログアウト用ビュー: リフレッシュトークンを blacklist して再利用不可にする
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.data.get("refresh")
+        if not refresh_token:
+            return Response(
+                {"detail": "refresh トークンが必要です。"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except TokenError:
+            # 既に無効化済みでも 200 を返す（冪等）
+            pass
+        return Response(status=status.HTTP_205_RESET_CONTENT)

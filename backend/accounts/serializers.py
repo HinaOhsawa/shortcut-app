@@ -1,8 +1,10 @@
-# accounts/serializers.py 
+# accounts/serializers.py
 from rest_framework import serializers
 from .models import CustomUser
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import AuthenticationFailed
 
 # ログイン用シリアライザ
@@ -72,6 +74,19 @@ class RegisterSerializer(serializers.ModelSerializer):
         # API で受け付けたい/返したいフィールドを列挙
         fields = ("name", "email", "password")
 
+    def validate_password(self, value):
+        # Django の AUTH_PASSWORD_VALIDATORS（最小長・連番除外・既知漏洩等）を適用
+        # ユーザー属性類似チェックのため初期化中の name/email をダミー渡し
+        attrs = self.initial_data
+        try:
+            user = CustomUser(
+                email=attrs.get("email", ""),
+                name=attrs.get("name", ""),
+            )
+            validate_password(value, user=user)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
+        return value
 
     def create(self, validated_data):
         user = CustomUser(
