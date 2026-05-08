@@ -45,6 +45,9 @@ services:
       - "3000:3000"
     env_file:
       - .env
+    environment:
+      # Docker 内では backend サービス名で API に到達する
+      BACKEND_INTERNAL_URL: http://backend:8000
     depends_on:
       - backend
 

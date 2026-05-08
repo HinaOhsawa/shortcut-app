@@ -42,18 +42,12 @@ export default function SignInForm() {
 
   const onSubmit = async (values: SigninFormData) => {
     try {
-      // サインイン API 呼び出し
+      // サインイン API 呼び出し（access/refresh は HttpOnly Cookie で降りてくる）
       const data = await login(values.email, values.password);
-      // --- localStorage に保存 ---
-      localStorage.setItem("accessToken", data.access);
-      localStorage.setItem("refreshToken", data.refresh);
+      // ユーザー情報だけクライアント側に保持
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // --- Context に反映 ---
       setUser(data.user);
-
-      console.log("サインイン成功", data);
-      // サインイン成功 → ダッシュボードへリダイレクト
       router.push("/dashboard");
     } catch (err: unknown) {
       if (err instanceof Error) {

@@ -6,34 +6,29 @@ import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { useUser } from "@/app/context/UserContext";
 import { apiUrl } from "@/lib/apiBase";
+import { readCsrfToken } from "@/lib/csrf";
 
 export default function SignOutButton() {
   const router = useRouter();
   const { setUser } = useUser();
 
   const handleSignOut = async () => {
-    const accessToken = localStorage.getItem("accessToken");
-    const refreshToken = localStorage.getItem("refreshToken");
-
-    // サーバ側で refresh をブラックリストに登録（失敗してもクライアント側はクリアする）
-    if (accessToken && refreshToken) {
-      try {
-        await fetch(apiUrl("/api/accounts/logout/"), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ refresh: refreshToken }),
-        });
-      } catch {
-        // ネットワークエラーは握りつぶす（クライアント側のクリアを最優先）
-      }
+    // サーバ側で refresh をブラックリストし Cookie をクリアしてもらう
+    try {
+      const csrf = readCsrfToken();
+      await fetch(apiUrl("/api/accounts/logout/"), {
+        method: "POST",
+        credentials: "same-origin",
+        headers: csrf ? { "X-CSRFToken": csrf } : {},
+      });
+    } catch {
+      // ネットワークエラーは握りつぶす（クライアント側のクリアを最優先）
     }
 
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("user");
+    // ユーザー情報のローカル状態のみクリア（トークンは Cookie 側でサーバ管理）
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("user");
+    }
 
     setUser(null);
     router.push("/");
