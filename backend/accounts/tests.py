@@ -310,3 +310,148 @@ class ThrottleTests(_BaseAuthTestCase):
         )
         # throttle ではなく通常の 401 が返ること
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class EmailVerificationTests(_BaseAuthTestCase):
+    """メールアドレス検証フローを検証する。"""
+
+    def test_register_sends_verification_email(self):
+        from django.core import mail
+
+        res = self.client.post(
+            "/api/accounts/register/",
+            {
+                "name": "Verify",
+                "email": "verify@example.com",
+                "password": "Strongpass123!",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        # 新規ユーザーは未確認状態で作成される
+        user = CustomUser.objects.get(email="verify@example.com")
+        self.assertFalse(user.is_email_verified)
+        # 検証メールが 1 通送信される
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("verify@example.com", mail.outbox[0].to)
+        self.assertIn("/verify-email?token=", mail.outbox[0].body)
+
+    def _register_and_extract_token(self, email: str = "v@example.com") -> str:
+        from django.core import mail
+        import re
+
+        self.client.post(
+            "/api/accounts/register/",
+            {"name": "V", "email": email, "password": "Strongpass123!"},
+            format="json",
+        )
+        body = mail.outbox[-1].body
+        match = re.search(r"token=([\w\-]+)", body)
+        assert match, f"token not found in mail: {body}"
+        return match.group(1)
+
+    def test_verify_email_with_valid_token(self):
+        token = self._register_and_extract_token()
+        res = self.client.post(
+            "/api/accounts/verify-email/",
+            {"token": token},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        user = CustomUser.objects.get(email="v@example.com")
+        self.assertTrue(user.is_email_verified)
+        self.assertIsNotNone(user.email_verified_at)
+
+    def test_verify_email_token_cannot_be_reused(self):
+        token = self._register_and_extract_token()
+        self.client.post(
+            "/api/accounts/verify-email/",
+            {"token": token},
+            format="json",
+        )
+        # 2 度目は使用済みで弾かれる
+        res = self.client.post(
+            "/api/accounts/verify-email/",
+            {"token": token},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_verify_email_with_invalid_token(self):
+        res = self.client.post(
+            "/api/accounts/verify-email/",
+            {"token": "garbage-token-value"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_verify_email_with_expired_token(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from accounts.models import EmailVerificationToken
+
+        token = self._register_and_extract_token()
+        # トークンを期限切れに書き換える
+        record = EmailVerificationToken.objects.filter().latest("created_at")
+        record.expires_at = timezone.now() - timedelta(seconds=1)
+        record.save(update_fields=["expires_at"])
+
+        res = self.client.post(
+            "/api/accounts/verify-email/",
+            {"token": token},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_resend_verification_creates_new_email(self):
+        from django.core import mail
+
+        # 登録（1 通目）
+        self.client.post(
+            "/api/accounts/register/",
+            {
+                "name": "Resend",
+                "email": "resend@example.com",
+                "password": "Strongpass123!",
+            },
+            format="json",
+        )
+        sent_before = len(mail.outbox)
+        # ログインして cookie をセット
+        self.client.post(
+            "/api/accounts/login/",
+            {"email": "resend@example.com", "password": "Strongpass123!"},
+            format="json",
+        )
+        res = self.client.post("/api/accounts/resend-verification/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), sent_before + 1)
+
+    def test_resend_verification_rejects_already_verified_user(self):
+        user = CustomUser.objects.create_user(
+            email="already@example.com",
+            name="Already",
+            password="Strongpass123!",
+        )
+        user.is_email_verified = True
+        user.save(update_fields=["is_email_verified"])
+        self.client.force_authenticate(user=user)
+
+        res = self.client.post("/api/accounts/resend-verification/")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_resend_verification_requires_authentication(self):
+        res = self.client.post("/api/accounts/resend-verification/")
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_profile_returns_email_verification_status(self):
+        user = CustomUser.objects.create_user(
+            email="profstatus@example.com",
+            name="Pf",
+            password="Strongpass123!",
+        )
+        self.client.force_authenticate(user=user)
+        res = self.client.get("/api/accounts/profile/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn("is_email_verified", res.data)
+        self.assertFalse(res.data["is_email_verified"])
