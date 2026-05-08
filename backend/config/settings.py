@@ -185,6 +185,25 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+# ===== Cache (Redis) =====
+# DRF Throttle のカウンタはここに乗る。LocMemCache だと worker 間で共有されず
+# 実効レートが「設定値 × worker 数」になってしまうため、本番では Redis 必須。
+# 開発でも docker-compose の redis サービスを使い同条件で動かす。
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ.get("REDIS_URL", "redis://localhost:6379/0"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            # Redis 不調時は throttle を諦めてリクエストを通す（fail-open）。
+            # セキュリティ重視の運用では False にして fail-close にする選択肢もある。
+            "IGNORE_EXCEPTIONS": True,
+        },
+        "KEY_PREFIX": "shortcut",
+    }
+}
+
+
 # ===== Security headers =====
 # DEBUG=False の本番環境のみ HTTPS / HSTS を強制する
 SECURE_CONTENT_TYPE_NOSNIFF = True
