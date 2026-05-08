@@ -36,11 +36,15 @@ function ShortcutsView() {
   useEffect(() => {
     (async () => {
       try {
-        const url = new URL(apiUrl("/api/shortcuts/"));
+        // apiUrl は同一オリジン化により相対パスを返すので、URL コンストラクタには
+        // base にブラウザ自身の origin を渡す必要がある。
+        const url = new URL(apiUrl("/api/shortcuts/"), window.location.origin);
         if (appFilter) url.searchParams.set("app", appFilter);
         if (categoryFilter) url.searchParams.set("category", categoryFilter);
         if (searchQuery) url.searchParams.set("search", searchQuery);
-        const data = await fetchWithAuth(url.toString());
+        // fetchWithAuth は相対パスでも絶対 URL でも受け付ける。
+        // pathname + search を渡して相対のまま流す。
+        const data = await fetchWithAuth(url.pathname + url.search);
         setShortcuts(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("認証エラー:", err);
