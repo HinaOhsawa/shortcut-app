@@ -1,4 +1,5 @@
 # accounts/views.py
+from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
@@ -15,7 +16,10 @@ from .cookies import (
     clear_auth_cookies,
     set_auth_cookies,
 )
+from .email import issue_email_verification_token, send_verification_email
+from .models import EmailVerificationToken
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
+from .tokens import hash_token
 
 
 def _issue_token_response(user, http_status: int) -> Response:
@@ -42,6 +46,7 @@ class ProfileView(APIView):
             "id": user.id,
             "email": user.email,
             "name": user.name,
+            "is_email_verified": user.is_email_verified,
         })
 
 
@@ -71,6 +76,10 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            # 検証メールを送信。送信失敗で登録自体を失敗にしたくないため握りつぶす運用も
+            # ありうるが、開発初期は問題を見逃さないため例外を伝播させる。
+            plaintext = issue_email_verification_token(user)
+            send_verification_email(user, plaintext)
             return _issue_token_response(user, status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -116,3 +125,58 @@ class LogoutView(APIView):
         response = Response(status=status.HTTP_205_RESET_CONTENT)
         clear_auth_cookies(response)
         return response
+
+
+# メールアドレス検証ビュー
+# クライアントが /verify-email?token=... のクエリから取得したトークンを Body で送る
+class VerifyEmailView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        plaintext = (request.data.get("token") or "").strip()
+        if not plaintext:
+            return Response(
+                {"detail": "トークンが必要です。"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        token = EmailVerificationToken.objects.filter(
+            token_hash=hash_token(plaintext),
+        ).select_related("user").first()
+        # 「ユーザーが存在しない」「期限切れ」「使用済み」を区別せず統一エラーで返す
+        if token is None or not token.is_valid():
+            return Response(
+                {"detail": "トークンが無効または期限切れです。"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = token.user
+        now = timezone.now()
+        if not user.is_email_verified:
+            user.is_email_verified = True
+            user.email_verified_at = now
+            user.save(update_fields=["is_email_verified", "email_verified_at", "updated_at"])
+
+        token.used_at = now
+        token.save(update_fields=["used_at"])
+
+        return Response({"detail": "メールアドレスが確認されました。"})
+
+
+# 検証メール再送ビュー
+class ResendVerificationView(APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "email_send"
+
+    def post(self, request):
+        user = request.user
+        if user.is_email_verified:
+            return Response(
+                {"detail": "既に確認済みです。"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        plaintext = issue_email_verification_token(user)
+        send_verification_email(user, plaintext)
+        return Response({"detail": "確認メールを送信しました。"})
