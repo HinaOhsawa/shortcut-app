@@ -6,6 +6,7 @@ import { AppWindow, Folder, Keyboard, Plus } from "lucide-react";
 import { fetchWithAuth } from "@/lib/fetchWithAuth";
 import { apiUrl } from "@/lib/apiBase";
 import { useNavData } from "@/app/context/NavDataContext";
+import EmailVerificationBanner from "@/components/EmailVerificationBanner";
 
 export default function DashboardPage() {
   const { apps, categories } = useNavData();
@@ -45,6 +46,7 @@ export default function DashboardPage() {
 
   return (
     <div>
+      <EmailVerificationBanner />
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold text-fg">ダッシュボード</h1>
         <Link href="/shortcuts?new=1" className="btn">

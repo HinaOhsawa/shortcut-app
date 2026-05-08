@@ -75,6 +75,8 @@ REST_FRAMEWORK = {
         # 認証エンドポイント専用（ブルートフォース対策）
         "auth": "10/min",
         "register": "5/min",
+        # メール送信（検証メール再送・パスワードリセット要求）の連発防止
+        "email_send": "3/hour",
     },
 }
 
@@ -235,3 +237,25 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+
+
+# ===== Email =====
+# 開発時はコンソールに出力。本番は SMTP backend に切り替える。
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend",
+)
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True").lower() == "true"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@shortcut.local")
+
+# 検証メール本文に埋め込むフロントエンドの URL
+FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")
+
+# 検証トークンの有効期限（時間）
+EMAIL_VERIFICATION_TOKEN_LIFETIME_HOURS = int(
+    os.environ.get("EMAIL_VERIFICATION_TOKEN_LIFETIME_HOURS", "24")
+)
