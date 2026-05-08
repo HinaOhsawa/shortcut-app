@@ -4,6 +4,8 @@ from .views import (
     CookieTokenRefreshView,
     LoginView,
     LogoutView,
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
     ProfileView,
     RegisterView,
     ResendVerificationView,
@@ -22,5 +24,15 @@ urlpatterns = [
         "resend-verification/",
         ResendVerificationView.as_view(),
         name="resend_verification",
+    ),
+    path(
+        "password-reset/request/",
+        PasswordResetRequestView.as_view(),
+        name="password_reset_request",
+    ),
+    path(
+        "password-reset/confirm/",
+        PasswordResetConfirmView.as_view(),
+        name="password_reset_confirm",
     ),
 ]

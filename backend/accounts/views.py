@@ -16,9 +16,20 @@ from .cookies import (
     clear_auth_cookies,
     set_auth_cookies,
 )
-from .email import issue_email_verification_token, send_verification_email
-from .models import EmailVerificationToken
-from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
+from .email import (
+    issue_email_verification_token,
+    issue_password_reset_token,
+    send_password_reset_email,
+    send_verification_email,
+)
+from .models import CustomUser, EmailVerificationToken, PasswordResetToken
+from .serializers import (
+    LoginSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
+    RegisterSerializer,
+    UserSerializer,
+)
 from .tokens import hash_token
 
 
@@ -180,3 +191,76 @@ class ResendVerificationView(APIView):
         plaintext = issue_email_verification_token(user)
         send_verification_email(user, plaintext)
         return Response({"detail": "確認メールを送信しました。"})
+
+
+# パスワードリセット要求ビュー
+# メールアドレスの存在/非存在を区別せず常に 200 を返す（列挙攻撃対策）
+class PasswordResetRequestView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "email_send"
+
+    # 共通レスポンス。登録の有無に関わらず同一文言を返す
+    _GENERIC_RESPONSE = {
+        "detail": (
+            "リセットメールを送信した可能性があります。受信箱をご確認ください。"
+        )
+    }
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"]
+
+        # ユーザーが存在すればトークン発行 + メール送信。
+        # 存在しなくても処理時間を均すためダミー処理を入れる（タイミング攻撃の緩和）。
+        user = CustomUser.objects.filter(email__iexact=email).first()
+        if user is not None:
+            plaintext = issue_password_reset_token(user)
+            send_password_reset_email(user, plaintext)
+        else:
+            # set_password 相当の作業を捨てて時間を均す
+            CustomUser().set_password("dummy-for-timing-equalization")
+
+        return Response(self._GENERIC_RESPONSE)
+
+
+# パスワードリセット確定ビュー
+class PasswordResetConfirmView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth"
+
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        plaintext = serializer.validated_data["token"]
+        new_password = serializer.validated_data["new_password"]
+
+        token = PasswordResetToken.objects.filter(
+            token_hash=hash_token(plaintext),
+        ).select_related("user").first()
+        if token is None or not token.is_valid():
+            return Response(
+                {"detail": "トークンが無効または期限切れです。"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = token.user
+        user.set_password(new_password)
+        user.save(update_fields=["password", "updated_at"])
+
+        token.used_at = timezone.now()
+        token.save(update_fields=["used_at"])
+
+        # リセット元の他デバイスを強制ログアウトするため refresh を全 blacklist
+        from rest_framework_simplejwt.token_blacklist.models import (
+            OutstandingToken,
+            BlacklistedToken,
+        )
+
+        outstanding = OutstandingToken.objects.filter(user=user)
+        for outstanding_token in outstanding:
+            BlacklistedToken.objects.get_or_create(token=outstanding_token)
+
+        return Response({"detail": "パスワードを更新しました。"})

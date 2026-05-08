@@ -259,3 +259,8 @@ FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")
 EMAIL_VERIFICATION_TOKEN_LIFETIME_HOURS = int(
     os.environ.get("EMAIL_VERIFICATION_TOKEN_LIFETIME_HOURS", "24")
 )
+
+# パスワードリセットトークンの有効期限（時間）。短めに保つことでメール覗き見リスクを抑える
+PASSWORD_RESET_TOKEN_LIFETIME_HOURS = int(
+    os.environ.get("PASSWORD_RESET_TOKEN_LIFETIME_HOURS", "1")
+)

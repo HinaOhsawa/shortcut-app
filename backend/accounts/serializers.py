@@ -105,3 +105,41 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ("id", "name", "email")
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    """パスワードリセット要求のシリアライザ。
+
+    存在/非存在を区別したエラーは返さないため、ここでは email を受け取るだけ。
+    """
+
+    email = serializers.EmailField(
+        error_messages={
+            "blank": "メールアドレスは必須です。",
+            "invalid": "メールアドレスの形式が正しくありません。",
+        }
+    )
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    """新パスワードへの更新シリアライザ。"""
+
+    token = serializers.CharField(
+        error_messages={"blank": "トークンが必要です。"},
+    )
+    new_password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+        error_messages={
+            "blank": "パスワードを入力してください。",
+            "min_length": "パスワードは8文字以上で入力してください。",
+        },
+    )
+
+    def validate_new_password(self, value):
+        # 登録時と同じ AUTH_PASSWORD_VALIDATORS を適用
+        try:
+            validate_password(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
+        return value

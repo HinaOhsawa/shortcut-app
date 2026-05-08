@@ -64,3 +64,30 @@ class EmailVerificationToken(models.Model):
     def is_valid(self) -> bool:
         from django.utils import timezone
         return self.used_at is None and self.expires_at > timezone.now()
+
+
+class PasswordResetToken(models.Model):
+    """パスワード再設定用の使い捨てトークン。
+
+    EmailVerificationToken と同じ「平文未保存・hash 保存」パターン。
+    有効期限は短め（1 時間）にして、メールを覗き見るリスクを最小化する。
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="password_reset_tokens",
+    )
+    token_hash = models.CharField(max_length=64, db_index=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "password_reset_tokens"
+        indexes = [models.Index(fields=["token_hash"])]
+
+    def is_valid(self) -> bool:
+        from django.utils import timezone
+        return self.used_at is None and self.expires_at > timezone.now()
