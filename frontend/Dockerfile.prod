@@ -1,0 +1,52 @@
+# 本番（App Runner / ECS Fargate 等）用の Next.js Dockerfile
+# multi-stage で最終イメージを最小化（standalone 出力を活用）
+
+############################
+# Stage 1: deps
+############################
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY app/package.json app/package-lock.json* ./
+RUN npm ci
+
+############################
+# Stage 2: builder
+############################
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY app/. .
+
+# next.config.ts の rewrites destination は build 時に評価されるため、
+# BACKEND_INTERNAL_URL は build arg として渡す必要がある。
+ARG BACKEND_INTERNAL_URL=http://localhost:8000
+ENV BACKEND_INTERNAL_URL=${BACKEND_INTERNAL_URL}
+
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npm run build
+
+############################
+# Stage 3: runner
+############################
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
+
+# 非 root ユーザーで実行
+RUN addgroup --system --gid 1001 nodejs \
+ && adduser --system --uid 1001 nextjs
+
+# standalone 出力に必要なファイル一式をコピー
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+EXPOSE 3000
+
+# standalone は server.js を生成する
+CMD ["node", "server.js"]

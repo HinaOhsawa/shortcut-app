@@ -7,6 +7,9 @@ const API_ORIGIN =
   process.env.BACKEND_INTERNAL_URL ?? "http://localhost:8000";
 
 const nextConfig: NextConfig = {
+  // Docker イメージを最小化するため standalone 出力を使う。
+  // .next/standalone に必要最小限のファイルが集まる。
+  output: "standalone",
   // Django は末尾スラッシュ付き URL を要求するため、Next.js のデフォルト
   // 「trailing slash → リダイレクト」挙動を /api 経路で有効化させない。
   skipTrailingSlashRedirect: true,
