@@ -93,6 +93,9 @@ SIMPLE_JWT = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise は SecurityMiddleware の直後に置くのが推奨。
+    # admin / DRF browsable API の static を gunicorn 経由で配信する。
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -195,6 +198,17 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+# collectstatic で静的ファイルをこのパスに集める。WhiteNoise が配信する。
+STATIC_ROOT = BASE_DIR / "staticfiles"
+# WhiteNoise の圧縮 + マニフェストキャッシュ（Django 4.2+ の STORAGES 形式）
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -231,6 +245,9 @@ if not DEBUG:
     # リバースプロキシ越しに HTTPS を判定する場合の標準設定
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = True
+    # App Runner / ALB のヘルスチェックは X-Forwarded-Proto を付けない経路で
+    # 来ることがある。/healthz だけはリダイレクトせず素のまま 200 を返す。
+    SECURE_REDIRECT_EXEMPT = [r"^healthz$"]
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     # HSTS: 1 年。サブドメインまで含めるかは運用環境に応じて見直す

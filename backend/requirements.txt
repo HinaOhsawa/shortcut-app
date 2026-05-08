@@ -4,3 +4,6 @@ djangorestframework_simplejwt==5.5.1
 psycopg2-binary
 django-cors-headers==4.7.0
 django-redis>=5.4
+# 本番運用
+gunicorn>=21.2
+whitenoise>=6.6
