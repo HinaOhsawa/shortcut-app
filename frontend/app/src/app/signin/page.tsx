@@ -124,6 +124,11 @@ export default function SignInForm() {
       </form>
 
       <p className="mt-2">
+        <Link href="/forgot-password" className="link">
+          パスワードをお忘れですか？
+        </Link>
+      </p>
+      <p className="mt-2">
         アカウントをお持ちでない方はこちらから
         <Link href="/signup" className="link">
           新規登録
