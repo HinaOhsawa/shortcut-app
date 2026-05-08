@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -131,3 +132,66 @@ class ProfileTests(APITestCase):
         res = self.client.get("/api/accounts/profile/")
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data["email"], "profile@example.com")
+
+
+class ThrottleTests(APITestCase):
+    """Redis cache を使った throttle が実際に発火することを検証する。
+
+    DEFAULT_THROTTLE_RATES の "auth" は 10/min、"register" は 5/min。
+    cache.clear() で各テスト前にカウンタをリセットして互いに干渉しないようにする。
+    """
+
+    def setUp(self):
+        cache.clear()
+
+    def test_login_throttle_returns_429_after_limit(self):
+        # 10 回までは正規の認証フローを通り（毎回 401）、11 回目で throttle される
+        for _ in range(10):
+            res = self.client.post(
+                "/api/accounts/login/",
+                {"email": "noone@example.com", "password": "x"},
+                format="json",
+            )
+            self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        res = self.client.post(
+            "/api/accounts/login/",
+            {"email": "noone@example.com", "password": "x"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+    def test_register_throttle_returns_429_after_limit(self):
+        # 5 回までは validation 失敗で 400 が返り、6 回目で throttle される
+        for i in range(5):
+            self.client.post(
+                "/api/accounts/register/",
+                {"name": "X", "email": f"x{i}@example.com", "password": "x"},
+                format="json",
+            )
+
+        res = self.client.post(
+            "/api/accounts/register/",
+            {"name": "X", "email": "x6@example.com", "password": "x"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+    def test_throttle_counter_is_isolated_after_cache_clear(self):
+        # cache.clear() 後にはカウンタがリセットされ、再びリクエストが通ることを確認
+        for _ in range(10):
+            self.client.post(
+                "/api/accounts/login/",
+                {"email": "noone@example.com", "password": "x"},
+                format="json",
+            )
+
+        cache.clear()
+
+        res = self.client.post(
+            "/api/accounts/login/",
+            {"email": "noone@example.com", "password": "x"},
+            format="json",
+        )
+        # throttle ではなく通常の 401 が返ること
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
