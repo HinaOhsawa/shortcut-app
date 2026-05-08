@@ -455,3 +455,176 @@ class EmailVerificationTests(_BaseAuthTestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertIn("is_email_verified", res.data)
         self.assertFalse(res.data["is_email_verified"])
+
+
+class PasswordResetRequestTests(_BaseAuthTestCase):
+    """リセット要求エンドポイントを検証する。"""
+
+    def setUp(self):
+        self.user = CustomUser.objects.create_user(
+            email="reset@example.com",
+            name="Reset",
+            password="OldStrongPass123!",
+        )
+
+    def test_request_for_existing_user_sends_email(self):
+        from django.core import mail
+
+        res = self.client.post(
+            "/api/accounts/password-reset/request/",
+            {"email": "reset@example.com"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("reset@example.com", mail.outbox[0].to)
+        self.assertIn("/password-reset/confirm?token=", mail.outbox[0].body)
+
+    def test_request_for_unknown_user_returns_same_response(self):
+        from django.core import mail
+
+        res = self.client.post(
+            "/api/accounts/password-reset/request/",
+            {"email": "nobody@example.com"},
+            format="json",
+        )
+        # 存在しなくても 200、メールは送信されない（列挙対策）
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_response_body_does_not_distinguish_existence(self):
+        existing_res = self.client.post(
+            "/api/accounts/password-reset/request/",
+            {"email": "reset@example.com"},
+            format="json",
+        )
+        # cache.clear で email_send throttle をリセットしてから次を投げる
+        from django.core.cache import cache as dj_cache
+
+        dj_cache.clear()
+        unknown_res = self.client.post(
+            "/api/accounts/password-reset/request/",
+            {"email": "nobody@example.com"},
+            format="json",
+        )
+        self.assertEqual(existing_res.status_code, unknown_res.status_code)
+        self.assertEqual(existing_res.data, unknown_res.data)
+
+
+class PasswordResetConfirmTests(_BaseAuthTestCase):
+    """リセット確定エンドポイントを検証する。"""
+
+    def setUp(self):
+        self.user = CustomUser.objects.create_user(
+            email="confirm@example.com",
+            name="Confirm",
+            password="OldStrongPass123!",
+        )
+
+    def _request_and_extract_token(self) -> str:
+        from django.core import mail
+        import re
+
+        self.client.post(
+            "/api/accounts/password-reset/request/",
+            {"email": "confirm@example.com"},
+            format="json",
+        )
+        body = mail.outbox[-1].body
+        match = re.search(r"token=([\w\-]+)", body)
+        assert match, f"token not found: {body}"
+        return match.group(1)
+
+    def test_confirm_with_valid_token_updates_password(self):
+        token = self._request_and_extract_token()
+        res = self.client.post(
+            "/api/accounts/password-reset/confirm/",
+            {"token": token, "new_password": "NewStrongPass456!"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("NewStrongPass456!"))
+        self.assertFalse(self.user.check_password("OldStrongPass123!"))
+
+    def test_confirm_token_cannot_be_reused(self):
+        token = self._request_and_extract_token()
+        self.client.post(
+            "/api/accounts/password-reset/confirm/",
+            {"token": token, "new_password": "NewStrongPass456!"},
+            format="json",
+        )
+        # 2 度目は使用済みで弾かれる
+        res = self.client.post(
+            "/api/accounts/password-reset/confirm/",
+            {"token": token, "new_password": "AnotherStrong789!"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_confirm_with_invalid_token(self):
+        res = self.client.post(
+            "/api/accounts/password-reset/confirm/",
+            {"token": "garbage-token-value", "new_password": "NewStrongPass456!"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_confirm_with_expired_token(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from accounts.models import PasswordResetToken
+
+        token = self._request_and_extract_token()
+        record = PasswordResetToken.objects.filter(user=self.user).latest("created_at")
+        record.expires_at = timezone.now() - timedelta(seconds=1)
+        record.save(update_fields=["expires_at"])
+
+        res = self.client.post(
+            "/api/accounts/password-reset/confirm/",
+            {"token": token, "new_password": "NewStrongPass456!"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_confirm_rejects_weak_password(self):
+        token = self._request_and_extract_token()
+        res = self.client.post(
+            "/api/accounts/password-reset/confirm/",
+            {"token": token, "new_password": "1234567"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("new_password", res.data)
+        # トークンは未使用のままであるべき
+        from accounts.models import PasswordResetToken
+
+        record = PasswordResetToken.objects.filter(user=self.user).latest("created_at")
+        self.assertIsNone(record.used_at)
+
+    def test_confirm_blacklists_existing_refresh_tokens(self):
+        # ログインして refresh トークンを発行
+        login_res = self.client.post(
+            "/api/accounts/login/",
+            {"email": "confirm@example.com", "password": "OldStrongPass123!"},
+            format="json",
+        )
+        self.assertEqual(login_res.status_code, status.HTTP_200_OK)
+
+        # リセット要求
+        token = self._request_and_extract_token()
+        # ConfirmTests の状態をリセットするため新しいクライアントから confirm を打つ
+        from rest_framework.test import APIClient
+
+        anonymous = APIClient()
+        confirm_res = anonymous.post(
+            "/api/accounts/password-reset/confirm/",
+            {"token": token, "new_password": "NewStrongPass456!"},
+            format="json",
+        )
+        self.assertEqual(confirm_res.status_code, status.HTTP_200_OK)
+
+        # confirm 後、元クライアントの refresh で新 access を取れない
+        refresh_res = self.client.post("/api/accounts/token/refresh/")
+        self.assertEqual(refresh_res.status_code, status.HTTP_401_UNAUTHORIZED)
