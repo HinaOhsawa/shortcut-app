@@ -9,6 +9,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Lock } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
+import { withCsrfHeader } from "@/lib/csrf";
 
 const schema = z
   .object({
@@ -57,7 +58,7 @@ function ConfirmInner() {
       const res = await fetch(apiUrl("/api/accounts/password-reset/confirm/"), {
         method: "POST",
         credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
+        headers: withCsrfHeader({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           token,
           new_password: values.new_password,

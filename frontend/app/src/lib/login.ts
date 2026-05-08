@@ -1,5 +1,6 @@
 // frontend/app/src/lib/login.ts
 import { apiUrl } from "@/lib/apiBase";
+import { withCsrfHeader } from "@/lib/csrf";
 
 export type LoginResponse = {
   user: {
@@ -18,7 +19,9 @@ export async function login(
   const res = await fetch(apiUrl("/api/accounts/login/"), {
     method: "POST",
     credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
+    // 別ユーザーでログイン中など、access_token cookie が残っているとサーバが
+    // CSRF を強制するため、csrftoken があれば添えておく。
+    headers: withCsrfHeader({ "Content-Type": "application/json" }),
     body: JSON.stringify({ email, password }),
   });
   const data = await res.json();

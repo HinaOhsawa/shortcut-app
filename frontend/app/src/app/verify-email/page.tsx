@@ -6,6 +6,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { apiUrl } from "@/lib/apiBase";
+import { withCsrfHeader } from "@/lib/csrf";
 
 type Status = "pending" | "success" | "error";
 
@@ -28,7 +29,7 @@ function VerifyEmailInner() {
         const res = await fetch(apiUrl("/api/accounts/verify-email/"), {
           method: "POST",
           credentials: "same-origin",
-          headers: { "Content-Type": "application/json" },
+          headers: withCsrfHeader({ "Content-Type": "application/json" }),
           body: JSON.stringify({ token }),
         });
         const data = await res.json();
