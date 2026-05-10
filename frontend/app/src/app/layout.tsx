@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
@@ -46,7 +47,11 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <UserProvider>
-            <Header />
+            {/* Header は useSearchParams を使うため、本番ビルド時の prerender で
+                Suspense 境界を要求される。SSR 中は空にして遅延ハイドレートする。 */}
+            <Suspense fallback={null}>
+              <Header />
+            </Suspense>
             <main className="mx-auto max-w-5xl py-8 px-4 sm:px-6">
               {children}
             </main>

@@ -47,16 +47,11 @@ export default function SignupPage() {
 
   const onSubmit = async (values: SignupFormData) => {
     try {
-      // サインアップ API 呼び出し
+      // サインアップ API（access/refresh は HttpOnly Cookie でサーバから降ってくる）
       const data = await signup(values.name, values.email, values.password);
-      console.log("登録成功", data);
-
-      // --- localStorage に保存 ---
-      localStorage.setItem("accessToken", data.access);
-      localStorage.setItem("refreshToken", data.refresh);
+      // ユーザー情報のみクライアント側に保持
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // --- Context に反映 ---
       setUser(data.user);
 
       // 登録成功 → ダッシュボードへリダイレクト
