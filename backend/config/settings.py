@@ -242,18 +242,23 @@ SECURE_REFERRER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
 
 if not DEBUG:
-    # リバースプロキシ越しに HTTPS を判定する場合の標準設定
+    # ALB / Reverse Proxy が HTTPS 終端する場合は X-Forwarded-Proto を信用する
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SECURE_SSL_REDIRECT = True
     # App Runner / ALB のヘルスチェックは X-Forwarded-Proto を付けない経路で
     # 来ることがある。/healthz だけはリダイレクトせず素のまま 200 を返す。
     SECURE_REDIRECT_EXEMPT = [r"^healthz$"]
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    # HSTS: 1 年。サブドメインまで含めるかは運用環境に応じて見直す
-    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+
+    # HTTPS 強制は env で切替可能。HTTP-only な学習用 ECS デプロイなど、
+    # ALB で TLS 終端しない構成では DJANGO_FORCE_HTTPS=False を渡す。
+    FORCE_HTTPS = os.environ.get("DJANGO_FORCE_HTTPS", "True").lower() == "true"
+    if FORCE_HTTPS:
+        SECURE_SSL_REDIRECT = True
+        SESSION_COOKIE_SECURE = True
+        CSRF_COOKIE_SECURE = True
+        # HSTS: 1 年。サブドメインまで含めるかは運用環境に応じて見直す
+        SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365
+        SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+        SECURE_HSTS_PRELOAD = True
 
 
 # ===== Email =====
