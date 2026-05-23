@@ -13,11 +13,16 @@ REFRESH_COOKIE_PATH = "/api/accounts/"
 
 
 def _common_cookie_kwargs() -> dict:
-    """環境（DEBUG）に応じた共通の Cookie 属性を返す。"""
+    """環境に応じた共通の Cookie 属性を返す。
+
+    Secure は SESSION_COOKIE_SECURE と連動させる。これにより:
+    - dev (DEBUG=True): SESSION_COOKIE_SECURE 未設定 → False → HTTP で Cookie 送信可
+    - prod HTTPS (DJANGO_FORCE_HTTPS=True): True → HTTPS のみ送信
+    - HTTP-only ALB (DJANGO_FORCE_HTTPS=False): False → HTTP で Cookie 送信可
+    """
     return {
         "httponly": True,
-        # dev (HTTP) では Secure を外さないと Cookie がそもそも保存されない
-        "secure": not settings.DEBUG,
+        "secure": getattr(settings, "SESSION_COOKIE_SECURE", False),
         "samesite": "Lax",
     }
 
