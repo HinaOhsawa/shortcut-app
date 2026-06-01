@@ -1,5 +1,13 @@
 # AWS App Runner デプロイ手順（学習用、自動 URL）
 
+> ⚠️ **本ドキュメントは参考用（古い情報を含みます）**
+>
+> AWS App Runner は **2026-04-30 以降、新規のお客様の受付を停止** しました。
+> 既存ユーザー以外は本手順では作成できません。
+>
+> 同じアプリを実機にデプロイする際は **[aws-deploy-ecs.md](aws-deploy-ecs.md)（ECS Fargate 版）** を参照してください。
+> こちらは App Runner と異なり ALB の path routing で同一オリジン化する構成です。
+
 学習用に AWS にデプロイし、確認後すぐに削除する想定の手順。
 東京リージョン（ap-northeast-1）、ドメイン無し（App Runner の自動 URL を使う）。
 
