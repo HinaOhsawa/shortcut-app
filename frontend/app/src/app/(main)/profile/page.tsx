@@ -1,7 +1,9 @@
+// frontend/app/src/app/(main)/profile/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { fetchWithAuth } from "@/lib/fetchWithAuth";
+import { apiUrl } from "@/lib/apiBase";
 
 interface Profile {
   name: string;
@@ -15,9 +17,7 @@ export default function ProfilePage() {
     console.log(localStorage.getItem("accessToken"));
     async function loadProfile() {
       try {
-        const data = await fetchWithAuth(
-          "http://localhost:8000/api/accounts/profile/"
-        );
+        const data = await fetchWithAuth(apiUrl("/api/accounts/profile/"));
         setProfile(data);
       } catch (err) {
         console.error("認証エラー:", err);

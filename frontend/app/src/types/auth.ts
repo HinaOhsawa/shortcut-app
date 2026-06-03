@@ -2,7 +2,7 @@
 
 // ユーザーデータの型定義
 export type User = {
-  id: number;
+  id: string; // バックエンドは UUID
   name: string;
   email: string;
 };

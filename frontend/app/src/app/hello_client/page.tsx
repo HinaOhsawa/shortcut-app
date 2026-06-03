@@ -1,13 +1,14 @@
 "use client"; // appディレクトリの場合
 
 import { useEffect, useState } from "react";
+import { apiUrl } from "@/lib/apiBase";
 
 export default function HelloWorld() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/hello/") // APIのURL
+    fetch(apiUrl("/api/hello/"))
       .then((res) => res.json())
       .then((data) => {
         setMessage(data.message);

@@ -15,13 +15,18 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import path, include
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
+
+
+def healthz(_request):
+    """App Runner / ALB 等のヘルスチェック用。DB 接続まで含めない簡易版。"""
+    return JsonResponse({"status": "ok"})
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("healthz", healthz, name="healthz"),
     path("api/accounts/", include("accounts.urls")),  # すべて accounts/ にまとめる
+    path("api/shortcuts/", include("shortcuts.urls")),
 ]

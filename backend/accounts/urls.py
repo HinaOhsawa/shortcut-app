@@ -1,12 +1,38 @@
-# accounts/urls.py 
+# accounts/urls.py
 from django.urls import path
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .views import ProfileView, RegisterView, LoginView
+from .views import (
+    CookieTokenRefreshView,
+    LoginView,
+    LogoutView,
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
+    ProfileView,
+    RegisterView,
+    ResendVerificationView,
+    VerifyEmailView,
+)
 
 urlpatterns = [
-    path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),  # ログイン
-    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"), # トークン更新
+    # トークンは HttpOnly Cookie に格納する。Authorization ヘッダフローは廃止。
+    path("token/refresh/", CookieTokenRefreshView.as_view(), name="token_refresh"),
     path("profile/", ProfileView.as_view(), name="profile"),
-    path("register/", RegisterView.as_view(), name="register"),  # 新規登録
-    path("login/", LoginView.as_view(), name="login"), # ログイン
+    path("register/", RegisterView.as_view(), name="register"),
+    path("login/", LoginView.as_view(), name="login"),
+    path("logout/", LogoutView.as_view(), name="logout"),
+    path("verify-email/", VerifyEmailView.as_view(), name="verify_email"),
+    path(
+        "resend-verification/",
+        ResendVerificationView.as_view(),
+        name="resend_verification",
+    ),
+    path(
+        "password-reset/request/",
+        PasswordResetRequestView.as_view(),
+        name="password_reset_request",
+    ),
+    path(
+        "password-reset/confirm/",
+        PasswordResetConfirmView.as_view(),
+        name="password_reset_confirm",
+    ),
 ]

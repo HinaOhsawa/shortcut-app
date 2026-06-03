@@ -1,0 +1,39 @@
+# 本番（App Runner / ECS Fargate 等）用の Dockerfile
+# - gunicorn で WSGI を起動
+# - WhiteNoise が静的ファイルを配信するため collectstatic をビルド時に実行
+# - 非 root ユーザーで動かす
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+# psycopg2 ビルドに必要な最小限のパッケージ
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# collectstatic はビルド時に実施。SECRET_KEY が必要なため、
+# 本番値ではなくビルド専用のダミー値を渡す。
+ENV DJANGO_SECRET_KEY=build-time-dummy \
+    DJANGO_DEBUG=True
+RUN python manage.py collectstatic --noinput
+
+# 非 root ユーザーで実行
+RUN useradd --create-home --uid 1000 app \
+ && chown -R app:app /app
+USER app
+
+# App Runner はデフォルトで 8080 を使うため、それに合わせる
+EXPOSE 8080
+
+# entrypoint: マイグレーション実行 → gunicorn 起動
+# (App Runner はインスタンス起動ごとに毎回これが走るが、migrate は冪等なので問題なし)
+CMD ["sh", "-c", "python manage.py migrate --noinput && exec gunicorn config.wsgi:application --bind 0.0.0.0:8080 --workers 2 --threads 4 --access-logfile - --error-logfile -"]

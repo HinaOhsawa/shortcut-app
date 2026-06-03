@@ -10,23 +10,34 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+def _csv_env(key: str, default: str = "") -> list[str]:
+    return [v.strip() for v in os.environ.get(key, default).split(",") if v.strip()]
+
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-vz7j%j=3_*p87s-fkq%8v1gi8wjj@65+2aq-8#knt^kr+u+5o*'
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-dev-only-change-me-in-production",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() == "true"
 
-# ALLOWED_HOSTS = []
-ALLOWED_HOSTS = ["*"]  # 開発用
+ALLOWED_HOSTS = _csv_env("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+
+# 本番で SECRET_KEY が未設定なら起動時に失敗させる
+if not DEBUG and SECRET_KEY.startswith("django-insecure-"):
+    raise RuntimeError(
+        "DJANGO_SECRET_KEY must be set to a secure value when DEBUG is False"
+    )
 
 
 # Application definition
@@ -44,19 +55,47 @@ INSTALLED_APPS = [
     "accounts",
     "shortcuts",
     "rest_framework_simplejwt",
-
+    "rest_framework_simplejwt.token_blacklist",
 ]
 
 AUTH_USER_MODEL = "accounts.CustomUser"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    )
+        # HttpOnly Cookie からの JWT を主に、Authorization ヘッダはフォールバック
+        "accounts.authentication.CookieJWTAuthentication",
+    ),
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "60/min",
+        "user": "300/min",
+        # 認証エンドポイント専用（ブルートフォース対策）
+        "auth": "10/min",
+        "register": "5/min",
+        # メール送信（検証メール再送・パスワードリセット要求）の連発防止
+        "email_send": "3/hour",
+    },
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": True,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise は SecurityMiddleware の直後に置くのが推奨。
+    # admin / DRF browsable API の static を gunicorn 経由で配信する。
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -65,8 +104,29 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     "corsheaders.middleware.CorsMiddleware",
 ]
-# 開発環境用（全てのオリジンを許可）
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = _csv_env(
+    "CORS_ALLOWED_ORIGINS",
+    "http://localhost:3000,http://127.0.0.1:3000",
+)
+
+CORS_ALLOW_HEADERS = [
+    "authorization",
+    "content-type",
+    "x-csrftoken",
+]
+
+# Next.js rewrites を経由するため通常のリクエストは Same-Origin だが、
+# 開発時の直叩きや CSRF トークン検証時のオリジン照合のため明示しておく
+CSRF_TRUSTED_ORIGINS = _csv_env(
+    "CSRF_TRUSTED_ORIGINS",
+    "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000",
+)
+
+# csrftoken Cookie はフロントエンドの JS から読む必要があるため HttpOnly にしない
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = "Lax"
+# ヘッダ名を SimpleJWT 等と揃えて X-CSRFToken に統一
+CSRF_HEADER_NAME = "HTTP_X_CSRFTOKEN"
 
 ROOT_URLCONF = 'config.urls'
 
@@ -94,11 +154,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'shortcuts',
-        'USER': 'myuser',
-        'PASSWORD': 'mypassword',
-        'HOST': 'db',  # docker-compose の service 名
-        'PORT': '5432',
+        'NAME': os.environ.get("POSTGRES_DB", "shortcuts"),
+        'USER': os.environ.get("POSTGRES_USER", "myuser"),
+        'PASSWORD': os.environ.get("POSTGRES_PASSWORD", ""),
+        'HOST': os.environ.get("POSTGRES_HOST", "db"),
+        'PORT': os.environ.get("POSTGRES_PORT", "5432"),
     }
 }
 
@@ -138,8 +198,91 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+# collectstatic で静的ファイルをこのパスに集める。WhiteNoise が配信する。
+STATIC_ROOT = BASE_DIR / "staticfiles"
+# WhiteNoise の圧縮 + マニフェストキャッシュ（Django 4.2+ の STORAGES 形式）
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# ===== Cache (Redis) =====
+# DRF Throttle のカウンタはここに乗る。LocMemCache だと worker 間で共有されず
+# 実効レートが「設定値 × worker 数」になってしまうため、本番では Redis 必須。
+# 開発でも docker-compose の redis サービスを使い同条件で動かす。
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ.get("REDIS_URL", "redis://localhost:6379/0"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            # Redis 不調時は throttle を諦めてリクエストを通す（fail-open）。
+            # セキュリティ重視の運用では False にして fail-close にする選択肢もある。
+            "IGNORE_EXCEPTIONS": True,
+        },
+        "KEY_PREFIX": "shortcut",
+    }
+}
+
+
+# ===== Security headers =====
+# DEBUG=False の本番環境のみ HTTPS / HSTS を強制する
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
+
+if not DEBUG:
+    # ALB / Reverse Proxy が HTTPS 終端する場合は X-Forwarded-Proto を信用する
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    # App Runner / ALB のヘルスチェックは X-Forwarded-Proto を付けない経路で
+    # 来ることがある。/healthz だけはリダイレクトせず素のまま 200 を返す。
+    SECURE_REDIRECT_EXEMPT = [r"^healthz$"]
+
+    # HTTPS 強制は env で切替可能。HTTP-only な学習用 ECS デプロイなど、
+    # ALB で TLS 終端しない構成では DJANGO_FORCE_HTTPS=False を渡す。
+    FORCE_HTTPS = os.environ.get("DJANGO_FORCE_HTTPS", "True").lower() == "true"
+    if FORCE_HTTPS:
+        SECURE_SSL_REDIRECT = True
+        SESSION_COOKIE_SECURE = True
+        CSRF_COOKIE_SECURE = True
+        # HSTS: 1 年。サブドメインまで含めるかは運用環境に応じて見直す
+        SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365
+        SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+        SECURE_HSTS_PRELOAD = True
+
+
+# ===== Email =====
+# 開発時はコンソールに出力。本番は SMTP backend に切り替える。
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend",
+)
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True").lower() == "true"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@shortcut.local")
+
+# 検証メール本文に埋め込むフロントエンドの URL
+FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "http://localhost:3000")
+
+# 検証トークンの有効期限（時間）
+EMAIL_VERIFICATION_TOKEN_LIFETIME_HOURS = int(
+    os.environ.get("EMAIL_VERIFICATION_TOKEN_LIFETIME_HOURS", "24")
+)
+
+# パスワードリセットトークンの有効期限（時間）。短めに保つことでメール覗き見リスクを抑える
+PASSWORD_RESET_TOKEN_LIFETIME_HOURS = int(
+    os.environ.get("PASSWORD_RESET_TOKEN_LIFETIME_HOURS", "1")
+)

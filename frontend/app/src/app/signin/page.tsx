@@ -42,19 +42,13 @@ export default function SignInForm() {
 
   const onSubmit = async (values: SigninFormData) => {
     try {
-      // サインイン API 呼び出し
+      // サインイン API 呼び出し（access/refresh は HttpOnly Cookie で降りてくる）
       const data = await login(values.email, values.password);
-      // --- localStorage に保存 ---
-      localStorage.setItem("accessToken", data.access);
-      localStorage.setItem("refreshToken", data.refresh);
+      // ユーザー情報だけクライアント側に保持
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // --- Context に反映 ---
       setUser(data.user);
-
-      console.log("サインイン成功", data);
-      // サインイン成功 → マイページへリダイレクト
-      router.push("/profilepage");
+      router.push("/dashboard");
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError("root.serverError", { message: err.message });
@@ -129,6 +123,11 @@ export default function SignInForm() {
         </button>
       </form>
 
+      <p className="mt-2">
+        <Link href="/forgot-password" className="link">
+          パスワードをお忘れですか？
+        </Link>
+      </p>
       <p className="mt-2">
         アカウントをお持ちでない方はこちらから
         <Link href="/signup" className="link">

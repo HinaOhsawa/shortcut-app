@@ -24,6 +24,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    # メールアドレス検証済みかどうか。新規登録時は False、検証メール経由で True になる
+    is_email_verified = models.BooleanField(default=False)
+    email_verified_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -34,3 +37,57 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+
+class EmailVerificationToken(models.Model):
+    """メールアドレス検証用の使い捨てトークン。
+
+    平文トークンは DB に保存せず、sha256 ハッシュのみを格納する。
+    DB 漏洩時に未使用トークンが悪用されるのを防ぐ。
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="email_verification_tokens",
+    )
+    token_hash = models.CharField(max_length=64, db_index=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "email_verification_tokens"
+        indexes = [models.Index(fields=["token_hash"])]
+
+    def is_valid(self) -> bool:
+        from django.utils import timezone
+        return self.used_at is None and self.expires_at > timezone.now()
+
+
+class PasswordResetToken(models.Model):
+    """パスワード再設定用の使い捨てトークン。
+
+    EmailVerificationToken と同じ「平文未保存・hash 保存」パターン。
+    有効期限は短め（1 時間）にして、メールを覗き見るリスクを最小化する。
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="password_reset_tokens",
+    )
+    token_hash = models.CharField(max_length=64, db_index=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "password_reset_tokens"
+        indexes = [models.Index(fields=["token_hash"])]
+
+    def is_valid(self) -> bool:
+        from django.utils import timezone
+        return self.used_at is None and self.expires_at > timezone.now()

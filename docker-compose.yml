@@ -2,13 +2,22 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: mypassword
-      POSTGRES_DB: shortcuts
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    # 永続化を有効化して再起動でレート制限カウンタが消えないようにする
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
 
   backend:
     build: ./backend
@@ -17,10 +26,15 @@ services:
       - ./backend:/app
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=postgres://myuser:mypassword@db:5432/shortcuts
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       - db
+      - redis
 
   frontend:
     build: ./frontend
@@ -29,8 +43,14 @@ services:
       - ./frontend/app:/app
     ports:
       - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      # Docker 内では backend サービス名で API に到達する
+      BACKEND_INTERNAL_URL: http://backend:8000
     depends_on:
       - backend
 
 volumes:
   db_data:
+  redis_data:

@@ -1,116 +1,217 @@
 @import "tailwindcss";
+
 /* --------------------------
-  ダークモードを有効化
+  ダークモード: .dark クラスをトリガに
   --------------------------*/
 @custom-variant dark (&:where(.dark, .dark *));
+
 /* --------------------------
-CSS変数を定義（ベースの色やフォント） 
---------------------------*/
+  デザイントークン (Light)
+
+  役割ベースで命名:
+    bg/surface/surface-2/surface-3 : 面
+    line/line-strong               : 罫線
+    fg/muted/subtle                : テキスト
+    primary/primary-hover/primary-fg/primary-soft/primary-soft-fg : ブランドアクセント
+    accent (タグ等)/info-soft (情報) : セカンダリ
+    danger/danger-soft             : 破壊操作
+    success-soft                   : 成功
+
+  色を変えたい時はこの :root と .dark の値だけを差し替えれば全体に反映される。
+  --------------------------*/
 :root {
-  --primary-background: #ffffff;
-  --primary-foreground: #314158;
-  --secondary-background: #e2e8f0;
-  --secondary-foreground: #62748e;
+  --bg: #fbf6f2;
+  --surface: #ffffff;
+  --surface-2: #ede7e3;
+  --surface-3: #d5cdc7;
+  --line: #dcd3ce;
+  --line-strong: #ded8d3;
+  --fg: #1b1918;
+  --muted: #52525b;
+  --subtle: #a1a1aa;
+
+  --primary: #32cc96;
+  --primary-hover: #7dedbe;
+  --primary-fg: #ffffff;
+  --primary-soft: #e3dad3;
+  --primary-soft-fg: #5a5047;
+  --primary-soft-border: #c1b8b0;
+
+  --accent: #f6aec9;
+  --accent-soft: #f9edf1;
+  --accent-soft-fg: #5c4591;
+  --accent-soft-border: #a898ce;
+
+  --info-soft: #fffbeb;
+  --info-soft-fg: #b45309;
+  --info-soft-border: #fde68a;
+
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --danger-fg: #ffffff;
+  --danger-soft: #fef2f2;
+  --danger-soft-fg: #b91c1c;
+
+  --success-soft: #f0fdf4;
+  --success-soft-fg: #15803d;
+
+  --overlay: rgba(0, 0, 0, 0.5);
 }
-/* 
-primary-bg:#fff;
-primary:slate-700;
-secondary-bg:slate-50;
-secondary:slate-500; 
-*/
+
+.dark {
+  --bg: #2b2b34;
+  --surface: #181b18;
+  --surface-2: #4b524f;
+  --surface-3: #333c38;
+  --line: #27272a;
+  --line-strong: #3f3f46;
+  --fg: #fafafa;
+  --muted: #a1a1aa;
+  --subtle: #71717a;
+
+  --primary: #32cc96;
+  --primary-hover: #66b393;
+  --primary-fg: #ffffff;
+  --primary-soft: rgba(50, 204, 150, 0.15);
+  --primary-soft-fg: #dfdfdf;
+  --primary-soft-border: rgba(50, 204, 150, 0.35);
+
+  --accent: #2dd4bf;
+  --accent-soft: rgba(45, 212, 191, 0.15);
+  --accent-soft-fg: #5eead4;
+  --accent-soft-border: rgba(45, 212, 191, 0.35);
+
+  --info-soft: rgba(251, 191, 36, 0.15);
+  --info-soft-fg: #fcd34d;
+  --info-soft-border: rgba(251, 191, 36, 0.35);
+
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
+  --danger-fg: #ffffff;
+  --danger-soft: rgba(239, 68, 68, 0.18);
+  --danger-soft-fg: #fca5a5;
+
+  --success-soft: rgba(34, 197, 94, 0.18);
+  --success-soft-fg: #86efac;
+
+  --overlay: rgba(0, 0, 0, 0.7);
+}
 
 /* --------------------------
-CSS変数をTailwind で使えるようにマッピング 
-
-  Tailwind v4 では、--color-* という名前で定義すると 
-  bg- や text- などのユーティリティクラスで自動的に参照可能になります。
+  Tailwind (v4) からトークンを利用可能に
+  --color-* で定義すると bg-/text-/border-/ring- が自動で使える
   --------------------------*/
 @theme inline {
-  --color-primary-bg: var(--primary-background);
-  --color-primary: var(--primary-foreground);
-  --color-secondary-bg: var(--secondary-background);
-  --color-secondary: var(--secondary-foreground);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-fg: var(--primary-soft-fg);
+  --color-primary-soft-border: var(--primary-soft-border);
+
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-fg: var(--accent-soft-fg);
+  --color-accent-soft-border: var(--accent-soft-border);
+
+  --color-info-soft: var(--info-soft);
+  --color-info-soft-fg: var(--info-soft-fg);
+  --color-info-soft-border: var(--info-soft-border);
+
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-fg: var(--danger-fg);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-soft-fg: var(--danger-soft-fg);
+
+  --color-success-soft: var(--success-soft);
+  --color-success-soft-fg: var(--success-soft-fg);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 /* --------------------------
-  ダークモード用に変数を上書き 
-  --------------------------*/
-@media (prefers-color-scheme: dark) {
-  :root {
-    --primary-background: #1d293d;
-    --primary-foreground: #ffffff;
-    --secondary-background: #314158;
-    --secondary-foreground: #cad5e2;
-  }
-}
-/* 
-primary-bg:slate-800;
-primary:#ffffff;
-secondary-bg:slate-700;
-secondary:slate-300; 
-*/
-/* --------------------------
-  ダークモード用に変数を上書き 
+  Base
   --------------------------*/
 @layer base {
   body {
-    background: var(--primary-background);
-    color: var(--primary-foreground);
-    font-family: Arial, Helvetica, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
   }
   h2 {
-    font-size: 1.5rem;
-    font-weight: bold;
-    margin-bottom: 1rem;
-    color: var(--primary);
-    @apply text-2xl font-bold mb-2 text-primary;
+    @apply text-2xl font-bold mb-2 text-fg;
   }
   p {
-    color: var(--secondary-foreground);
+    color: var(--muted);
   }
   a {
-    @apply text-indigo-500 hover:text-indigo-600;
+    @apply text-primary hover:text-primary-hover;
     text-decoration: none;
   }
   label {
-    color: var(--secondary);
-    @apply block text-sm font-medium  mb-1 text-secondary;
+    @apply block text-sm font-medium mb-1 text-muted;
   }
-  input {
-    @apply w-full pl-10 pr-4 py-2 rounded-lg bg-white/10 border border-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent;
+  input,
+  textarea,
+  select {
+    @apply w-full px-3 py-2 rounded-md bg-surface text-fg border border-line placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition;
   }
 }
 
+/* --------------------------
+  Components
+  --------------------------*/
 @layer components {
   .link {
-    @apply text-indigo-500 hover:text-indigo-400 font-bold;
+    @apply text-primary hover:text-primary-hover font-medium;
   }
   .btn {
-    @apply my-2 w-auto bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium py-2 px-3 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none cursor-pointer;
+    @apply my-2 inline-flex items-center justify-center gap-1 bg-primary hover:bg-primary-hover text-primary-fg font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer;
   }
-}
-/* --------------------------
-  フォーム関連 
-  ---------------------------*/
-@layer components {
-  input.input-error {
-    @apply border-red-500 focus:ring-red-500 focus:ring-1;
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-1 bg-surface hover:bg-surface-2 text-fg border border-line font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer;
   }
-  .input-icon {
-    @apply absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400;
-  }
-  .form-card {
-    @apply bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-xl p-8 max-w-lg mx-auto;
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-1 bg-danger hover:bg-danger-hover text-danger-fg font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer;
   }
   .submit-btn {
-    @apply my-6 w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none cursor-pointer;
+    @apply my-6 w-full bg-primary hover:bg-primary-hover text-primary-fg font-medium py-3 px-4 rounded-md transition-colors disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer;
+  }
+  input.input-error {
+    @apply border-danger focus:ring-danger/40 focus:border-danger;
+  }
+  .input-icon {
+    @apply absolute left-3 top-1/2 -translate-y-1/2 text-subtle pointer-events-none;
+  }
+  .form-card {
+    @apply bg-surface border border-line rounded-2xl shadow-sm p-8 max-w-lg mx-auto;
   }
   .show-password-btn {
-    @apply absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-300;
+    @apply absolute right-3 top-1/2 -translate-y-1/2 text-subtle hover:text-fg cursor-pointer;
   }
   .error-message {
-    @apply text-red-500 text-sm mt-1;
+    @apply text-danger text-sm mt-1;
+  }
+}
+
+/* form-card 配下では下線付きラベルを継承させない */
+@layer base {
+  .form-card input {
+    padding-left: 2.5rem;
   }
 }

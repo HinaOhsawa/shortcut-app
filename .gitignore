@@ -5,6 +5,7 @@ out/
 dist/
 npm-debug.log
 yarn-error.log
+*.tsbuildinfo
 
 # Python / Django
 *.pyc
@@ -29,9 +30,13 @@ ENV/
 .idea/
 
 # Docker
-*.env
-*.log
 docker-compose.override.yml
+
+# Env (.env is checked-in only as .env.example)
+.env
+.env.*
+!.env.example
+*.log
 
 # OS / system files
 .DS_Store
